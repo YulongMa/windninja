@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QTreeWidget" name="navTreeWidget">
+     <widget class="QTreeWidget" name="treeWidget">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
         <horstretch>0</horstretch>
@@ -120,7 +120,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>6</number>
       </property>
       <widget class="QWidget" name="solverPage">
        <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -137,7 +137,7 @@
         <item>
          <widget class="QRadioButton" name="radioButton_2">
           <property name="text">
-           <string>Conserve Mass &amp; Momentum</string>
+           <string>Conserve Mass &amp;&amp; Momentum</string>
           </property>
          </widget>
         </item>
@@ -576,7 +576,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QTreeWidget" name="treeWidget">
+            <widget class="QTreeWidget" name="wxModelTreeWidget">
              <column>
               <property name="text">
                <string notr="true">1</string>
