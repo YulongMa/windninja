@@ -29,8 +29,9 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
-QT4_WRAP_UI(QTUI_H_SRCS WidgetDownloadDEM.ui
-                        setconfigdialog.ui)
+QT4_WRAP_UI(QTUI_H_SRCS ui/WidgetDownloadDEM.ui
+                        ui/mainwindow.ui
+                        ui/setconfigdialog.ui)
 
 SET(NINJA_GUI_INCLUDES consoleDockWidget.h
                        diurnalInput.h
@@ -108,6 +109,7 @@ SET(NINJA_GUI_SOURCES cmake_gui.cpp
                       WidgetDownloadDEM.cpp
                       GoogleMapsInterface.cpp
                       setconfigdialog.cpp
+                      #mainwindow.cpp
                       ${QTUI_H_SRCS})
 IF(WIN32)
     SET(NINJA_GUI_SOURCES ${NINJA_GUI_SOURCES} 
