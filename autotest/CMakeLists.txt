@@ -256,9 +256,11 @@ IF(WITH_NOMADS_SUPPORT)
                  ${EXECUTABLE_OUTPUT_PATH}/test_main --run_test=simplenomadsclient/download_1 mackay nam_nest_alaska 1 2 0 zip)
         ADD_TEST(nomads_nam_narre_1_hour_zip
                  ${EXECUTABLE_OUTPUT_PATH}/test_main --run_test=simplenomadsclient/download_1 mackay narre 1 2 0 zip)
+    ENDIF(NOMADS_EXPER_FORECASTS)
+    IF(NOMADS_RTMA)
         ADD_TEST(nomads_rtma_conus_1_hour_zip
                  ${EXECUTABLE_OUTPUT_PATH}/test_main --run_test=simplenomadsclient/download_1 mackay rtma_conus 1 1 0 zip)
-    ENDIF(NOMADS_EXPER_FORECASTS)
+    ENDIF(NOMADS_RTMA)
     # UTC
     ADD_TEST(utc_create_1
              ${EXECUTABLE_OUTPUT_PATH}/test_main --run_test=utc/create_1)
@@ -294,6 +296,10 @@ IF(WITH_NOMADS_SUPPORT)
              ${EXECUTABLE_OUTPUT_PATH}/test_main --run_test=utc/from_iso_invalid_1)
     ADD_TEST(utc_strftime_1
              ${EXECUTABLE_OUTPUT_PATH}/test_main --run_test=utc/strftime_1)
+    ADD_TEST(utc_copy_1
+             ${EXECUTABLE_OUTPUT_PATH}/test_main --run_test=utc/copy_1)
+    ADD_TEST(utc_copy_2
+             ${EXECUTABLE_OUTPUT_PATH}/test_main --run_test=utc/copy_2)
     ADD_TEST(form_name_1
              ${EXECUTABLE_OUTPUT_PATH}/test_main --run_test=simplenomadsclient/form_name_1)
 ENDIF(WITH_NOMADS_SUPPORT)

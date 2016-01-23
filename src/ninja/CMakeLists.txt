@@ -54,6 +54,7 @@ SET(NINJA_SOURCES addDiurnalFlow.cpp
                   gdal_util.cpp
                   gdal_fetch.cpp
                   genericSurfInitialization.cpp
+                  griddedInitialization.cpp
                   initialize.cpp
                   KmlVector.cpp
                   LineStyle.cpp
@@ -83,7 +84,7 @@ SET(NINJA_SOURCES addDiurnalFlow.cpp
                   pointInitialization.cpp
                   preconditioner.cpp
                   readInputFile.cpp
-                  scalarTransport.cpp
+                  relief_fetch.cpp
                   Shade.cpp
                   ShapeVector.cpp
                   shpopen.cpp
@@ -103,12 +104,15 @@ SET(NINJA_SOURCES addDiurnalFlow.cpp
                   wn_3dArray.cpp
                   wn_3dScalarField.cpp
                   wn_3dVectorField.cpp
+                  wn_Arrow.cpp
                   wxModelInitialization.cpp
                   wxModelInitializationFactory.cpp
                   wxStation.cpp
                   windninja.cpp)
 IF(NINJAFOAM)
-    SET(NINJA_SOURCES ${NINJA_SOURCES} ninjafoam.cpp)
+    SET(NINJA_SOURCES ${NINJA_SOURCES} 
+                    ninjafoam.cpp
+                    foamInitialization.cpp)
 ENDIF(NINJAFOAM)
 
 IF(WITH_NOMADS_SUPPORT)

@@ -1,10 +1,9 @@
 /******************************************************************************
- *
- * $Id:$
+ * relief_fetch.h 
  *
  * Project:  WindNinja
- * Purpose:  Class for storing scalar transport info.
- * Author:   Natalie Wagenbrenner <nwagenbrenner@gmail.com>
+ * Purpose:  Downloads relief maps given a bounding box 
+ * Author:   Levi Malott <levi.malott@mst.edu>
  *
  ******************************************************************************
  *
@@ -27,41 +26,38 @@
  *
  *****************************************************************************/
 
-#ifndef SCALAR_TRANSPORT_H
-#define SCALAR_TRANSPORT_H
+#ifndef RELIEFFETCH_H
+#define RELIEFFETCH_H
 
-#include "ascii_grid.h"
-#include "WindNinjaInputs.h"
-#include "mesh.h"
-#include "wn_3dScalarField.h"
-#include "wn_3dVectorField.h"
+#include "surface_fetch.h"
+#include <string>
 
-class scalarTransport
+/**
+ * @brief Downloads relief maps from a tile server
+ */
+class ReliefFetch : public SurfaceFetch
 {
-	public:
-		scalarTransport();	  //Default constructor
-		~scalarTransport();   // Destructor
-		
-        wn_3dScalarField Rx, Ry, Rz;    // eddy diffusivities
-        double volumeSource; // volume source used as source term (H) in govering equation
-        double sourceElemNum; // elemnent number of scalar source (for a point source)
-        
-        void allocate(Mesh const& mesh);
-        void deallocate();
-        
-        void computeDiffusivity(WindNinjaInputs &input,
-                                const Mesh &mesh, 
-                                const wn_3dScalarField &u,
-                                const wn_3dScalarField &v);
+public:
+    /**
+     * Constructor
+     */
+    ReliefFetch();
+    ReliefFetch( std::string path );
+    virtual SURF_FETCH_E FetchBoundingBox(double *bbox, double resolution,
+                                          const char *filename, char ** options );
 
 
-	private:
-        wn_3dScalarField heightAboveGround;
-        wn_3dScalarField windVelocity;
-        wn_3dVectorField velocityGradients;
+    SURF_FETCH_E makeReliefOf( std::string infile, std::string outfile );
+    /**
+     * Destructor
+     */
+    virtual ~ReliefFetch();
+
+protected:
+    SURF_FETCH_E Initialize();
 
 };
 
 
 
-#endif /* SCALAR_TRANPSORT_H */
+#endif // RELIEFFETCH_H

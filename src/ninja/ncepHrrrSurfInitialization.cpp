@@ -78,6 +78,15 @@ double ncepHrrrSurfInitialization::Get_Wind_Height()
 }
 
 /**
+*@brief Returns horizontal grid resolution of the model
+*@return return grid resolution (in km unless < 1, then degrees)
+*/
+double ncepHrrrSurfInitialization::getGridResolution()
+{
+    return 3.0;
+}
+
+/**
 * Fetch the variable names
 *
 * @return a vector of variable names
@@ -144,10 +153,10 @@ bool ncepHrrrSurfInitialization::identify( std::string fileName )
 {
 
     bool identified = true;
-    return false;
 
     if( fileName.find("nam") != fileName.npos ) {
         identified = false;
+        return identified;
     }
 
     //ID based on 10u band

@@ -45,6 +45,7 @@
 #include <algorithm>
 #include "boost/typeof/typeof.hpp"
 #include "WindNinjaInputs.h"
+#include "fetch_factory.h"
 
 /*-----------------------------------------------------------------------------
  *  Helper Macros
@@ -115,9 +116,6 @@ public:
     std::string fetch_wxForecast(eWxModelType modelType, int nHours, std::string demFileName);
     void makeArmy(std::string forecastFilename, std::string timeZone);
     void set_writeFarsiteAtmFile(bool flag);
-#ifdef NINJAFOAM
-    bool startNinjaFoamRuns(int numProcessors);
-#endif
     bool startRuns(int numProcessors);
     bool startFirstRun();
 
@@ -294,45 +292,6 @@ public:
     int setGeotiffOutFlag( const int nIndex, const bool flag, char ** papszOptions=NULL );
 #endif //EMISSIONS
 
-    /*-----------------------------------------------------------------------------
-     *  Scalar Methods
-     *-----------------------------------------------------------------------------*/
-#ifdef SCALAR
-    /**
-    * \brief Enable/disable scalar transport for a ninja
-    *
-    * \param nIndex index of a ninja
-    * \param flag Enables scalar transport if ture, disables if false
-    * \return errval Returns NINJA_SUCCESS upon success
-    */
-    int setScalarTransportFlag( const int nIndex, const bool flag, char ** papszOptions=NULL );
-    /**
-    * \brief Set source strength of scalar for a ninja
-    *
-    * \param nIndex index of a ninja
-    * \param source source strength of scalar in g/s (check this...)
-    * \return errval Returns NINJA_SUCCESS upon success
-    */
-    int setScalarSourceStrength( const int nIndex, const double source, char ** papszOptions=NULL );
-    /**
-    * \brief Set the x-coordinate of scalar source for a ninja
-    *
-    * \param nIndex index of a ninja
-    * \param coord Longitude of source location
-    * \return errval Returns NINJA_SUCCESS upon success
-    */
-    int setScalarXcoord( const int nIndex, const double coord, char ** papszOptions=NULL );
-    /**
-    * \brief Set the y-coordinate of scalar source for a ninja
-    *
-    * \param nIndex index of a ninja
-    * \param coord Latitude of source location
-    * \return errval Returns NINJA_SUCCESS upon success
-    */
-    int setScalarYcoord( const int nIndex, const double coord, char ** papszOptions=NULL );
-
-#endif //SCALAR
-
 #ifdef NINJAFOAM
     /*-----------------------------------------------------------------------------
      *  NinjaFOAM Methods
@@ -374,17 +333,6 @@ public:
     * \return errval Returns NINJA_SUCCESS upon success
     */
     int setNonEqBc( const int nIndex, const bool flag, char ** papszOptions=NULL );
-    
-    /**
-    * \brief Set the type of mesh for a NinjaFOAM run
-    *
-    * \param nIndex index of a ninja
-    * \param nMeshType Mesh type (snappyHexMesh or terrainBlockMesh)
-    * \return errval Returns NINJA_SUCCESS upon success
-    */
-    int setMeshType( const int nIndex, 
-                     const WindNinjaInputs::eMeshType meshType, 
-                     char ** papszOptions=NULL );
         
     /**
     * \brief Set the type of STL file for a NinjaFOAM run
@@ -505,6 +453,24 @@ public:
                                  std::string method,
                                  const bool matchPoints=false,
                                  char ** papszOptions=NULL );
+    /**
+    * \brief Set the input speed grid filename from a NinjaFOAM run for use with diurnal
+    *
+    * \param nIndex index of a ninja
+    * \param stlFile path/filename of gridded speed file
+    * \return errval Returns NINJA_SUCCESS upon success
+    */
+    int setSpeedInitGrid( const int nIndex, const std::string speedFile, char ** papszOptions=NULL );
+    
+    /**
+    * \brief Set the input direction grid filename from a NinjaFOAM run for use with diurnal
+    *
+    * \param nIndex index of a ninja
+    * \param stlFile path/filename of gridded direction file
+    * \return errval Returns NINJA_SUCCESS upon success
+    */
+    int setDirInitGrid( const int nIndex, const std::string dirFile, char ** papszOptions=NULL );
+    
     /**
     * \brief Set the input speed with units of a ninja
     *
@@ -880,6 +846,16 @@ public:
      *  Output Parameter Methods
      *-----------------------------------------------------------------------------*/
     /**
+    * \brief Set the output path for a ninja
+    *
+    * \param nIndex index of a ninja
+    * \param path path where output will be written
+    * \return errval Returns NINJA_SUCCESS upon success
+    */
+    int setOutputPath( const int nIndex, std::string path,
+                                 char ** papszOptions=NULL );
+    
+    /**
     * \brief Set the percent of output buffer clipping for a ninja
     *
     * \param nIndex index of a ninja
@@ -1120,6 +1096,19 @@ public:
     */
     int setPDFResolution( const int nIndex, const double resolution,
                                      std::string units, char ** papszOptions=NULL );
+
+
+    /* --------------------------------------------------------------------------*/
+    /** 
+     * @brief Configures the PDF output vector line width (defaults to 1.0)
+     * 
+     * @Param nIndex index of a ninja
+     * @Param linewidth value of the desired line width ( > 0.0 )
+     * 
+     * @Returns errval NINJA_SUCCESS if linewidth correctly set
+     */
+    /* ----------------------------------------------------------------------------*/
+    int setPDFLineWidth( const int nIndex, const float linewidth, char ** papszOptions=NULL );
 
     int setPDFDEM( const int nIndex, const std::string dem_filename, char ** papszOptions=NULL );
     /**

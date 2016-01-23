@@ -73,6 +73,7 @@ public:
     NinjaFoam& operator= ( NinjaFoam const& A );
 
     virtual bool simulate_wind();
+    inline virtual std::string identify() {return std::string("ninjafoam");}
 
 private:
 
@@ -100,9 +101,8 @@ private:
     void SetBcs();
     int writeMoveDynamicMesh();
     int writeBlockMesh();
-    int readDem(int &ratio_); //sets blockMesh data from DEM 
-    int readLogFile(int &ratio); //sets blockMesh data from STL log file when DEM not available
-    int writeSnappyMesh();
+    int readDem(double &ratio_); //sets blockMesh data from DEM 
+    int readLogFile(double &ratio); //sets blockMesh data from STL log file when DEM not available
     
     std::string boundary_name;
     std::string terrainName;
@@ -116,32 +116,41 @@ private:
     std::vector<std::string> bboxField;
     std::vector<std::string> cellField;
     std::vector<double> bbox;
-    std::vector<int> nCells;
-    double side1; // length of side of regular hex cell in zone1
+    std::vector<int> nCells; //number of cells in x,y,z directions of blockMesh
+    double side; // length of side of regular hex cell
+    double initialFirstCellHeight; //approx height of near-ground cell after moveDynamicMesh
+    double oldFirstCellHeight; //approx height of near-ground cell at previous time-step
+    double finalFirstCellHeight; //final approx height of near-ground cell after refinement
+    int latestTime; //latest time directory
+    int cellCount; //total cell count in the mesh 
     
     int ReplaceKey(std::string &s, std::string k, std::string v);
     int ReplaceKeys(std::string &s, std::string k, std::string v, int n = INT_MAX);
-    int CopyFile(const char *pszInput, const char *pszOutput);
+    int CopyFile(const char *pszInput, const char *pszOutput, std::string key="", std::string value="");
     
     int SurfaceTransformPoints();
     int SurfaceCheck();
+    int RefineSurfaceLayer();
     int MoveDynamicMesh();
+    int TopoSet();
+    int RefineMesh();
     int BlockMesh();
-    int DecomposePar(VSILFILE *fout);
-    int SnappyHexMesh();
-    int ReconstructParMesh(const char *const arg, VSILFILE *fout);
-    int ReconstructPar(const char *const arg, VSILFILE *fout);
+    int DecomposePar();
+    int ReconstructParMesh();
+    int ReconstructPar();
     int RenumberMesh();
     int CheckMesh();
     int ApplyInit();
     int SimpleFoam();
     int Sample();
     int ReadStl();
+    void UpdateDictFiles(); //updates U, p, epsilon, and k files for new timesteps (meshes)
 
     /* GDAL/OGR output */
     const char *pszVrtMem;
     const char *pszGridFilename;
     
+    int SampleRawOutput();
     int WriteOutputFiles();
     void SetOutputFilenames();
     

@@ -1246,9 +1246,9 @@ int mainWindow::checkInputFile(QString fileName)
         writeToConsole("Invalid Spatial Reference (prj), "
                        "cannot do a simulation with the supplied DEM", red);
         QMessageBox::warning(this, tr("WindNinja"),
-                             "The DEM does not contain a coordinated "
+                             "The DEM does not contain a proper spatial reference "
                              "system. WindNinja only supports DEM files "
-                             "with projected coordinate systems(ie UTM)",
+                             "with projected coordinate systems (e.g., UTM)",
                              QMessageBox::Ok | QMessageBox::Default);
         GDALClose((GDALDatasetH)poInputDS);
         return -1;
@@ -1264,9 +1264,9 @@ int mainWindow::checkInputFile(QString fileName)
         {
             hasPrj = false;
             QMessageBox::warning(this, tr("WindNinja"),
-                                 "The DEM does not contain a coordinated "
+                                 "The DEM does not contain a proper spatial reference "
                                  "system. WindNinja only supports DEM files "
-                                 "with projected coordinate systems(ie UTM)",
+                                 "with projected coordinate systems (e.g., UTM)",
                                  QMessageBox::Ok | QMessageBox::Default);
             GDALClose((GDALDatasetH)poInputDS);
             return -1;
@@ -1281,7 +1281,7 @@ int mainWindow::checkInputFile(QString fileName)
                                  "The DEM coordinated system is in a "
                                  "geographic projection (latitude/longitude). "
                                  "WindNinja only supports projected "
-                                 "coordinate systems(ie UTM)",
+                                 "coordinate systems (e.g., UTM)",
                                  QMessageBox::Ok | QMessageBox::Default);
             writeToConsole("Invalid Spatial Reference (prj), "
                            "cannot do a simulation with the supplied DEM", red);
@@ -1410,7 +1410,7 @@ int mainWindow::solve()
     meshChoice = Mesh::coarse;
     else if( meshIndex == 1 )
     meshChoice = Mesh::medium;
-    else if( meshIndex == 1 )
+    else if( meshIndex == 2 )
     meshChoice = Mesh::fine;
     else {
     meshRes = tree->surface->meshResDoubleSpinBox->value();
@@ -1598,20 +1598,6 @@ int mainWindow::solve()
     //number of processors
     int nThreads = tree->solve->numProcSpinBox->value();
 
-    /* INITIALIZE THE ARMY */
-    progressDialog->setValue( 0 );
-    runTime->restart();
-    connect( progressDialog, SIGNAL(canceled() ),
-         this, SLOT( cancelSolve() ) );
-
-    progressDialog->setCancelButtonText( "Cancel" );
-
-    setCursor( Qt::WaitCursor );
-
-    progressDialog->setLabelText( "Initializing runs..." );
-
-    writeToConsole( "Initializing runs..." );
-    
     delete army;
 #ifdef NINJAFOAM    
     army = new ninjaArmy(1, useNinjaFoam); // ninjafoam solver
@@ -1654,7 +1640,23 @@ int mainWindow::solve()
             progressDialog->cancel();
             return false;
         }
-        army->makeArmy( weatherFile, timeZone );
+        /* This can throw a badForecastFile */
+        try
+        {
+            army->makeArmy( weatherFile, timeZone );
+        }
+        catch( badForecastFile &e )
+        {
+             QMessageBox::critical( this, tr( "Invalid forecast file." ),
+                                    tr( "The forecast cannot be read." ),
+                                    QMessageBox::Ok | QMessageBox::Default );
+            disconnect(progressDialog, SIGNAL(canceled()), this, SLOT(cancelSolve()));
+            setCursor(Qt::ArrowCursor);
+            tree->weather->checkForModelData();
+            progressDialog->cancel();
+            progressDialog->hide();
+            return false;
+        }
         nRuns = army->getSize();
     }
 
@@ -1874,19 +1876,24 @@ int mainWindow::solve()
     writeToConsole(QString::number( army->getSize() ) + " runs initialized. Starting solver...");
     //sThread->start();
 
+    progressDialog->setValue( 0 );
+    runTime->restart();
+    connect( progressDialog, SIGNAL(canceled() ),
+         this, SLOT( cancelSolve() ) );
+
+    progressDialog->setCancelButtonText( "Cancel" );
+
+    setCursor( Qt::WaitCursor );
+
+    progressDialog->setLabelText( "Initializing runs..." );
+
+    writeToConsole( "Initializing runs..." );
+
     bool ninjaSuccess = false;
     //ninjaSuccess = sThread->run( nThreads, army );
     //start the army
     try {
-#ifdef NINJAFOAM
-            if(tree->ninjafoam->ninjafoamGroupBox->isChecked()){
-                ninjaSuccess = army->startNinjaFoamRuns( nThreads );
-            }
-            else
-                ninjaSuccess = army->startRuns( nThreads );
-#else
-            ninjaSuccess = army->startRuns( nThreads );
-#endif //NINJAFOAM
+        ninjaSuccess = army->startRuns( nThreads );
     }
     catch (bad_alloc& e)
     {
@@ -2789,10 +2796,10 @@ void mainWindow::enableNinjafoamOptions(bool enable)
     (void)enable;
     if( tree->ninjafoam->ninjafoamGroupBox->isChecked() )
     {
-        tree->diurnal->diurnalGroupBox->setCheckable( false );
-        tree->diurnal->diurnalGroupBox->setChecked( false );
-        tree->diurnal->diurnalGroupBox->setHidden( true );
-        tree->diurnal->ninjafoamConflictLabel->setHidden( false );
+        //tree->diurnal->diurnalGroupBox->setCheckable( false );
+        //tree->diurnal->diurnalGroupBox->setChecked( false );
+        //tree->diurnal->diurnalGroupBox->setHidden( true );
+        //tree->diurnal->ninjafoamConflictLabel->setHidden( false );
 
         #ifdef STABILITY
         tree->stability->stabilityGroupBox->setCheckable( false );
@@ -2817,9 +2824,14 @@ void mainWindow::enableNinjafoamOptions(bool enable)
         tree->surface->meshResComboBox->removeItem(4);
         tree->surface->ninjafoamConflictLabel->setHidden( false );
         
+        tree->vtk->ninjafoamConflictLabel->setHidden( false );
+        tree->vtk->vtkLabel->setHidden( true );
+        tree->vtk->vtkWarningLabel->setHidden( true );
+        
     }
     else{
         tree->diurnal->diurnalGroupBox->setCheckable( true );
+        tree->diurnal->diurnalGroupBox->setChecked( false );
         tree->diurnal->diurnalGroupBox->setHidden( false );
         tree->diurnal->ninjafoamConflictLabel->setHidden( true );
         
@@ -2831,16 +2843,22 @@ void mainWindow::enableNinjafoamOptions(bool enable)
         #endif
         
         tree->point->pointGroupBox->setCheckable( true );
+        tree->point->pointGroupBox->setChecked( false );
         tree->point->pointGroupBox->setHidden( false );
         tree->point->ninjafoamConflictLabel->setHidden( true );
         
         tree->weather->weatherGroupBox->setCheckable( true );
+        tree->weather->weatherGroupBox->setChecked( false );
         tree->weather->weatherGroupBox->setHidden( false );
-        tree->weather->ninjafoamConflictLabel->setHidden( false );
+        tree->weather->ninjafoamConflictLabel->setHidden( true );
         
         tree->surface->timeZoneGroupBox->setHidden( false );
         tree->surface->meshResComboBox->addItem("Custom", 4);
         tree->surface->ninjafoamConflictLabel->setHidden( true );
+        
+        tree->vtk->ninjafoamConflictLabel->setHidden( true );
+        tree->vtk->vtkLabel->setHidden( false );
+        tree->vtk->vtkWarningLabel->setHidden( false );
         
     }
 }

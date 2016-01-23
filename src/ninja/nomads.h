@@ -1,7 +1,5 @@
 /******************************************************************************
  *
- * $Id$
- *
  * Project:  WindNinja
  * Purpose:  Nomads C client
  * Author:   Kyle Shannon <kyle at pobox dot com>
@@ -85,9 +83,19 @@ extern "C" {
 ** to lookup the ip from the hostname using DNS.  This is an attempt to work
 ** around that.  It has been fixed in GDAL 1.11.x.  Older versions may want to
 ** try defining NOMADS_USE_IP.
+**
+** If NOMADS_TEST_PARA is set, use the parallel test server for pre-release
+** testing.
 */
-#define NOMADS_IP                        "140.90.101.62"
-#define NOMADS_HOST                      "nomads.ncep.noaa.gov"
+#ifdef NOMADS_TEST_PARA
+ #define NOMADS_IP                        "140.172.17.38"
+ #define NOMADS_HOST                      "para.nomads.ncep.noaa.gov"
+ #define NOMADS_PERL_SCRIPT(s)            s ## _para.pl
+#else /* NOMADS_TEST_PARA */
+ #define NOMADS_IP                        "140.90.101.62"
+ #define NOMADS_HOST                      "nomads.ncep.noaa.gov"
+ #define NOMADS_PERL_SCRIPT(s)            s ## .pl
+#endif /* NOMADS_TEST_PARA */
 
 /* Host for NOMADS */
 #define NOMADS_URL_CGI_HOST              "http://" NOMADS_HOST "/cgi-bin/"
@@ -217,9 +225,9 @@ static const char *apszNomadsKeys[][11] =
     ** HIRES Alaska
     */
     {
-      "hires_alaska",
+      "hires_arw_alaska",
       "filter_hiresak.pl",
-      "akarw.t%02dz.awpregf%02d.grib2",
+      "hiresw.t%02dz.arw_5km.f%02d.ak.grib2",
       "hiresw.%s",
       NOMADS_GENERIC_DATE,
       "6:6:0",
@@ -227,15 +235,29 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "5 km",
-      "HIRES Alaska" },
+      "HIRES ARW Alaska" },
+    /*
+    ** HIRES Alaska NMM
+    */
+    {
+      "hires_nmm_alaska",
+      "filter_hiresak.pl",
+      "hiresw.t%02dz.nmmb_5km.f%02d.ak.grib2",
+      "hiresw.%s",
+      NOMADS_GENERIC_DATE,
+      "6:6:0",
+      "0:48:1",
+      NOMADS_GENERIC_VAR_LIST,
+      NOMADS_GENERIC_LEVELS_LIST,
+      "5 km",
+      "HIRES NMM Alaska" },
     /*
     ** HIRES CONUS
-    ** Check on what this is.
     */
     {
       "hires_arw_conus",
       "filter_hiresconus.pl",
-      "conusarw.t%02dz.awp5kmf%02d.grib2",
+      "hiresw.t%02dz.arw_5km.f%02d.conus.grib2",
       "hiresw.%s",
       NOMADS_GENERIC_DATE,
       "0:12:12",
@@ -250,7 +272,7 @@ static const char *apszNomadsKeys[][11] =
     {
       "hires_nmm_conus",
       "filter_hiresconus.pl",
-      "conusnmmb.t%02dz.awp5kmf%02d.grib2",
+      "hiresw.t%02dz.nmmb_5km.f%02d.conus.grib2",
       "hiresw.%s",
       NOMADS_GENERIC_DATE,
       "0:12:12",
@@ -351,7 +373,21 @@ static const char *apszNomadsKeys[][11] =
       "NAM NEST CONUS" },
     /* XXX: NAM Hawaii NEST */
     /* XXX: NAM Puerto Rico NEST */
-    /* XXX: Alaska RTMA */
+    /* Alaska RTMA */
+    {
+      "rtma_ak",
+      "filter_akrtma.pl",
+      "akrtma.t%02dz.2dvaranl_ndfd.grb2",
+      "akrtma.%s",
+      NOMADS_GENERIC_DATE,
+      "0:23:1",
+      "0:0:1",
+      "TMP,UGRD,VGRD",
+      "10_m_above_ground,2_m_above_ground",
+      "2.5 km",
+      "RTMA ALASKA" },
+#endif /* NOMADS_EXPER_FORECASTS */
+#ifdef NOMADS_RTMA
     /*
     ** CONUS RTMA
     */
@@ -363,14 +399,52 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_DATE,
       "0:23:1",
       "0:0:1",
+      NOMADS_GENERIC_VAR_LIST,
+      NOMADS_GENERIC_LEVELS_LIST,
+      "2.5 km",
+      "RTMA CONUS" },
+#endif /* NOMADS_RTMA */
+#ifdef NOMADS_EXPER_FORECASTS
+    /* Guam RTMA */
+    {
+      "rtma_gu",
+      "filter_gurtma.pl",
+      "gurtma.t%02dz.2dvaranl_ndfd.grb2",
+      "gurtma.%s",
+      NOMADS_GENERIC_DATE,
+      "0:23:1",
+      "0:0:1",
       "TMP,UGRD,VGRD",
       "10_m_above_ground,2_m_above_ground",
       "2.5 km",
-      "RTMA CONUS" },
-    /* XXX: Guam RTMA */
-    /* XXX: Hawaii RTMA */
-    /* XXX: Puerto Rico RTMA */
-#endif
+      "RTMA GUAM" },
+    /* Hawaii RTMA */
+    {
+      "rtma_hi",
+      "filter_hirtma.pl",
+      "hirtma.t%02dz.2dvaranl_ndfd.grb2",
+      "hirtma.%s",
+      NOMADS_GENERIC_DATE,
+      "0:23:1",
+      "0:0:1",
+      "TMP,UGRD,VGRD",
+      "10_m_above_ground,2_m_above_ground",
+      "2.5 km",
+      "RTMA HAWAII" },
+    /* Puerto Rico RTMA */
+    {
+      "rtma_pr",
+      "filter_prrtma.pl",
+      "prrtma.t%02dz.2dvaranl_ndfd.grb2",
+      "prrtma.%s",
+      NOMADS_GENERIC_DATE,
+      "0:23:1",
+      "0:0:1",
+      "TMP,UGRD,VGRD",
+      "10_m_above_ground,2_m_above_ground",
+      "2.5 km",
+      "RTMA PUERTO RICO" },
+#endif /* NOMADS_EXPER_FORECASTS */
     /*
     ** HRRR
     */

@@ -45,8 +45,12 @@ NOMADS Configuration
 * `NOMADS_ENABLE_3D` Attempt to use three-dimensional initialization data.
   Alpha at best.  Not recommended.
 
+* `NOMADS_RTMA` Enable the CONUS RTMA model.  The RTMA is a "past cast", so the
+   duration always defaults to 0.  The most recent forecast hour is always
+   used.
+
 * `NOMADS_EXPER_FORECASTS` Enable some forecasts that may not work under the
-  current implementation.  NARR and RTMA almost fit, but don't with the current
+  current implementation.  NARR and NEST almost fit, but don't with the current
   organization.  Primarily a debugging tool.  Not recommended.
 
 ### GFS horizontal grid resolution

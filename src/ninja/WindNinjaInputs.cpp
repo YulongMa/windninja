@@ -103,9 +103,11 @@ WindNinjaInputs::WindNinjaInputs()
     pdfOutFlag = false;
     pdfDEMFileName = "!set";
     pdfResolution = -1.0;
+    pdfLineWidth  = 1.0;
     pdfUnits = lengthUnits::meters;
     pdfFile = "!set";
     keepOutGridsInMemory = false;
+    customOutputPath = "!set";
 #ifdef NINJA_SPEED_TESTING
     speedDampeningRatio = 1;
 #endif
@@ -117,6 +119,11 @@ WindNinjaInputs::WindNinjaInputs()
     stabilityFlag = false;
     alphaStability = -1;
 #endif
+#ifdef FRICTION_VELOCITY
+    frictionVelocityFlag = false; 
+    frictionVelocityCalculationMethod = "!set";
+    ustarFile = "!set";
+#endif
 #ifdef EMISSIONS
     dustFilename = "!set";
     dustFileOut = "!set";
@@ -125,16 +132,14 @@ WindNinjaInputs::WindNinjaInputs()
     ustarFile = "!set";
     geotiffOutFlag = false;
 #endif
-#ifdef SCALAR
-    scalarTransportFlag = false;
-#endif
 #ifdef NINJAFOAM
-    nIterations = 2000;
+    nIterations = 1000;
     meshCount = 1000000;
     ninjafoamMeshChoice = WindNinjaInputs::fine;
-    nonEqBc = false;
-    meshType = WindNinjaInputs::MDM;
+    nonEqBc = true;
     stlFile = "!set";
+    speedInitGridFilename = "!set";
+    dirInitGridFilename= "!set";
 #endif
     
     outputPointsFilename = "!set";
@@ -146,10 +151,6 @@ WindNinjaInputs::WindNinjaInputs()
     omp_set_nested(false);
     omp_set_dynamic(false);
 #endif //_OPENMP
-
-#ifdef MKL
-    mkl_set_dynamic(false);
-#endif //MKL
 
 }
 
@@ -190,20 +191,11 @@ WindNinjaInputs::WindNinjaInputs(const WindNinjaInputs &rhs)
   outer_relax = rhs.outer_relax;
   CPLDebug("NINJA", "Setting NINJA_POINT_MATCH_OUT_RELAX to %lf", outer_relax);
   diurnalWinds = rhs.diurnalWinds;
-#ifdef EMISSIONS
-   dustFlag = rhs.dustFlag;
-   dustFilename = rhs.dustFilename;
-   dustFileOut = rhs.dustFileOut;
-   geotiffOutFlag = rhs.geotiffOutFlag;
-   dustFile = rhs.dustFile;
-   ustarFile = rhs.ustarFile;
-#endif
 #ifdef NINJAFOAM
     nIterations = rhs.nIterations;
     meshCount = rhs.meshCount;
     ninjafoamMeshChoice = rhs.ninjafoamMeshChoice;
     nonEqBc = rhs.nonEqBc;
-    meshType = rhs.meshType;
     stlFile = rhs.stlFile;
 #endif
   outputPointsFilename = rhs.outputPointsFilename;
@@ -268,6 +260,7 @@ WindNinjaInputs::WindNinjaInputs(const WindNinjaInputs &rhs)
   dateTimeLegFile = rhs.dateTimeLegFile;
   volVTKFile = rhs.volVTKFile;
   keepOutGridsInMemory = rhs.keepOutGridsInMemory;
+  customOutputPath = rhs.customOutputPath;
   
 #ifdef NINJA_SPEED_TESTING
   speedDampeningRatio = rhs.speedDampeningRatio;
@@ -277,7 +270,11 @@ WindNinjaInputs::WindNinjaInputs(const WindNinjaInputs &rhs)
   downEntrainmentCoeff = rhs.downDragCoeff;
   upDragCoeff = rhs.upDragCoeff;
   upEntrainmentCoeff = rhs.upEntrainmentCoeff;
-
+#ifdef FRICTION_VELOCITY
+  frictionVelocityFlag = rhs.frictionVelocityFlag; 
+  frictionVelocityCalculationMethod = rhs.frictionVelocityCalculationMethod;
+  ustarFile = rhs.ustarFile;
+#endif
 #ifdef EMISSIONS
   dustFlag = rhs.dustFlag;
   dustFilename = rhs.dustFilename;
@@ -292,10 +289,6 @@ WindNinjaInputs::WindNinjaInputs(const WindNinjaInputs &rhs)
   alphaStability = rhs.alphaStability;
 #endif
   
-#ifdef SCALAR
-  scalarTransportFlag = rhs.scalarTransportFlag;
-#endif
-
   outputPath = rhs.outputPath;
 
   //class crap
@@ -307,9 +300,6 @@ WindNinjaInputs::WindNinjaInputs(const WindNinjaInputs &rhs)
   omp_set_dynamic(false);
 #endif //_OPENMP
 
-#ifdef MKL
-  mkl_set_dynamic(false);
-#endif //MKL
 }
 
 /**
@@ -362,7 +352,6 @@ WindNinjaInputs &WindNinjaInputs::operator=(const WindNinjaInputs &rhs)
       meshCount = rhs.meshCount;
       ninjafoamMeshChoice = rhs.ninjafoamMeshChoice;
       nonEqBc = rhs.nonEqBc;
-      meshType = rhs.meshType;
       stlFile = rhs.stlFile;
 #endif
       outputPointsFilename = rhs.outputPointsFilename;
@@ -428,6 +417,7 @@ WindNinjaInputs &WindNinjaInputs::operator=(const WindNinjaInputs &rhs)
       dateTimeLegFile = rhs.dateTimeLegFile;
       volVTKFile = rhs.volVTKFile;
       keepOutGridsInMemory = rhs.keepOutGridsInMemory;
+      customOutputPath = rhs.customOutputPath;
       
 #ifdef NINJA_SPEED_TESTING
       speedDampeningRatio = rhs.speedDampeningRatio;
@@ -442,9 +432,10 @@ WindNinjaInputs &WindNinjaInputs::operator=(const WindNinjaInputs &rhs)
       stabilityFlag = rhs.stabilityFlag;
       alphaStability = rhs.alphaStability;
 #endif
-      
-#ifdef SCALAR
-      scalarTransportFlag = rhs.scalarTransportFlag;
+#ifdef FRICTION_VELOCITY
+      frictionVelocityFlag = rhs.frictionVelocityFlag; 
+      frictionVelocityCalculationMethod = rhs.frictionVelocityCalculationMethod;
+      ustarFile = rhs.ustarFile;
 #endif
 
       outputPath = rhs.outputPath;
@@ -457,10 +448,6 @@ WindNinjaInputs &WindNinjaInputs::operator=(const WindNinjaInputs &rhs)
       omp_set_nested(false);
       omp_set_dynamic(false);
 #endif //_OPENMP
-
-#ifdef MKL
-      mkl_set_dynamic(false);
-#endif //MKL
 
     }
   return *this;
