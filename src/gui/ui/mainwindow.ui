@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>530</width>
+    <width>757</width>
     <height>846</height>
    </rect>
   </property>
@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
+   <layout class="QHBoxLayout" name="horizontalLayout_10">
     <item>
      <widget class="QTreeWidget" name="navTreeWidget">
       <property name="sizePolicy">
@@ -28,81 +28,6 @@
         <string>WindNinja</string>
        </property>
       </column>
-      <item>
-       <property name="text">
-        <string>Solver</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Input</string>
-       </property>
-       <item>
-        <property name="text">
-         <string>Surface</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Diurnal</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Stablility</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Wind Input</string>
-        </property>
-        <item>
-         <property name="text">
-          <string>Domain Average Initialization</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Point Initialization</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Weather Model Initialization</string>
-         </property>
-        </item>
-       </item>
-      </item>
-      <item>
-       <property name="text">
-        <string>Output</string>
-       </property>
-       <item>
-        <property name="text">
-         <string>Google Earth</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Fire Behavior</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Shape Files</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>VTK</string>
-        </property>
-       </item>
-      </item>
-      <item>
-       <property name="text">
-        <string>Solve</string>
-       </property>
-      </item>
      </widget>
     </item>
     <item>
@@ -114,7 +39,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>8</number>
+       <number>6</number>
       </property>
       <widget class="QWidget" name="solverPage">
        <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -844,7 +769,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>530</width>
+     <width>757</width>
      <height>25</height>
     </rect>
    </property>
