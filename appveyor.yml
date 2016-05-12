@@ -1,3 +1,26 @@
+clone_folder: c:\build
+
+environment:
+  GDAL_DATA: ABC
+  WINDNINJA_DATA: ABC
+
+platform: Any CPU
+
+before_build:
+  # Make dependency directories
+  - ps: "mkdir C:\boost"
+  - ps: "mkdir C:\qt"
+  - ps: "mkdir C:\gdal"
+  # Download x64 MSVC-1800 dependencies (2013).
+  # Download GDAL, unzip and list the files for the log.
+  - ps: "(new-object System.Net.WebClient).DownloadFile('http://download.gisinternals.com/sdk/downloads/release-1800-x64-dev.zip,'C:\gdal\')"
+  - ps: "cd C:\gdal && unzip release-1800-x64-dev.zip"
+  - ps: "ls C:\gdal\release-1800-x64-dev"
+
+before_package:
+
+after_build:
+
 install:
   "\"C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Bin\\SetEnv.cmd\" /x64"
 
@@ -6,3 +29,12 @@ build_script:
   - nmake
   - nmake test
   - ctest
+
+test_script:
+  - ps:
+
+notifications:
+  - provider: Email
+    to:
+      - kyle@pobox.com
+    on_build_status_changed: true
