@@ -12,7 +12,7 @@ before_package:
 after_build:
 
 install:
-  "\"C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Bin\\SetEnv.cmd\" /x64"
+  - ps: "\"C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Bin\\SetEnv.cmd\" /x64"
   # Make dependency directories
   - ps: mkdir C:\\boost
   - ps: mkdir C:\\qt4
