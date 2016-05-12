@@ -14,9 +14,9 @@ after_build:
 install:
   "\"C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Bin\\SetEnv.cmd\" /x64"
   # Make dependency directories
-  - ps: "mkdir C:\\boost
-  - ps: "mkdir C:\\qt4"
-  - ps: "mkdir C:\\gdal"
+  - ps: mkdir C:\\boost
+  - ps: mkdir C:\\qt4
+  - ps: mkdir C:\\gdal
   # Download x64 MSVC-1800 dependencies (2013).
   # Download GDAL, unzip and list the files for the log.
   - ps: "(new-object System.Net.WebClient).DownloadFile('http://download.gisinternals.com/sdk/downloads/release-1800-x64-dev.zip,'C:\\gdal\\')"
