@@ -19,7 +19,7 @@ install:
   - ps: mkdir C:\\gdal
   # Download x64 MSVC-1800 dependencies (2013).
   # Download GDAL, unzip and list the files for the log.
-  - ps: (new-object System.Net.WebClient).DownloadFile('http://download.gisinternals.com/sdk/downloads/release-1800-x64-dev.zip,'C:\\gdal\\')
+  - ps: (new-object System.Net.WebClient).DownloadFile('http://download.gisinternals.com/sdk/downloads/release-1800-x64-dev.zip','C:\\gdal\\')
   - ps: cd C:\\gdal && unzip release-1800-x64-dev.zip
   - ps: ls C:\\gdal\\release-1800-x64-dev
 
