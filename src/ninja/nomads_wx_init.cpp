@@ -240,6 +240,7 @@ std::string NomadsWxModel::fetchForecast( std::string demFile, int nHours, std::
     char *pszRefTime = NULL;
     if (startTime != "" && startTime != "now") {
       pszRefTime = CPLStrdup(CPLSPrintf(startTime.c_str()));
+      CPLDebug("NINJA", "using %s for nomads reference time", pszRefTime);
     }
     rc = NomadsFetch( pszKey, pszRefTime, nHours, 1, adfWENS, pszTmpFile, NULL,
                       pfnProgress );

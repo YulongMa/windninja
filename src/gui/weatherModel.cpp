@@ -308,7 +308,7 @@ void weatherModel::getData()
     }
 
     try {
-        model->fetchForecast( inputFile.toStdString(), hours );
+        model->fetchForecast( inputFile.toStdString(), hours, pszRefTime );
     }
     catch( badForecastFile &e ) {
         progressDialog->close();
@@ -327,6 +327,7 @@ void weatherModel::getData()
         checkForModelData();
         return;
     }
+    CPLFree(pszRefTime);
 
 #if !defined(NINJA_32BIT)
     if( modelChoice > 4 )
@@ -478,6 +479,7 @@ void weatherModel::unselectForecast( bool checked )
     else
     treeView->selectionModel()->clear();
 }
+
 const char * weatherModel::ExpandDescription( const char *pszReadable )
 {
     if( pszReadable == NULL )
