@@ -101,7 +101,7 @@ void initializeOptions()
         // allowed only on command line
         po::options_description generic("Generic options");
         generic.add_options()
-                        ("version", "print version")
+u                       ("version", "print version")
                         ("help", "produce help message")
                         ("config_file", po::value<std::string>(),
                                 "configuration file ('config_file' flag not required)")
@@ -305,6 +305,7 @@ int windNinjaCLI(int argc, char* argv[])
                 ("initialization_method", po::value<std::string>()/*->required()*/, "initialization method (domainAverageInitialization, pointInitialization, wxModelInitialization)")
                 ("time_zone", po::value<std::string>(), "time zone (common choices are: America/New_York, America/Chicago, America/Denver, America/Phoenix, America/Los_Angeles, America/Anchorage; use 'auto-detect' to try and find the time zone for the dem.  All choices are listed in date_time_zonespec.csv)")
                 ("wx_model_type", po::value<std::string>(), osAvailableWx.c_str() )
+                ("forecast_start", po::value<std::string>()->default_value("now"), "forecast start time, may be in the past(format:YYYYMMDDTHH:MM:SS)")
                 ("forecast_duration", po::value<int>(), "forecast duration to download (in hours)")
                 ("forecast_filename", po::value<std::string>(), "path/filename of an already downloaded wx forecast file")
                 ("match_points",po::value<bool>()->default_value(true), "match simulation to points(true, false)")
@@ -913,7 +914,8 @@ int windNinjaCLI(int argc, char* argv[])
                 {
                     model = wxModelInitializationFactory::makeWxInitializationFromId( model_type );
                     windsim.makeArmy( model->fetchForecast( vm["elevation_file"].as<std::string>(),
-                                                            vm["forecast_duration"].as<int>() ),
+                                                            vm["forecast_duration"].as<int>(),
+                                                            vm["forecast_start"].as<std::string>() ),
                                                             osTimeZone );
                 }
                 catch(... )
