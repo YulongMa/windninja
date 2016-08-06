@@ -514,7 +514,8 @@ void weatherModel::setComboToolTip(int)
 
 void weatherModel::updateStartEdit(const QString &model) {
   qDebug() << model;
-  // If the model is from UCAR, we don't support back cast
+  // If the model is from UCAR, we don't support back cast.  The NOMADS RTMA is
+  // near real-time as well, so we omit here.
   if (model.isEmpty() || model.startsWith("UCAR") || model.contains("RTMA")) {
     startTimeEdit->setDateTime(QDateTime::currentDateTime());
     startTimeEdit->setEnabled(false);
