@@ -362,8 +362,11 @@ double wxModelInitialization::GetWxModelBuffer(double delta)
  *
  */
 std::string wxModelInitialization::fetchForecast( std::string demFile,
-                          int nHours )
+                          int nHours, std::string startTime )
 {
+    // The UCAR implementations can not handle time offsets.  It is for
+    // NOMADS implementations.
+    (void)startTime;
     /*
      * Get the bounds of the dem
      */

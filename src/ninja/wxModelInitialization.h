@@ -123,7 +123,7 @@ class wxModelInitialization : public initialize
 
     std::string generateUrl( double north, double west, double east,
                              double south, int hours);
-    virtual std::string fetchForecast( std::string demFile, int nHours );
+    virtual std::string fetchForecast( std::string demFile, int nHours, std::string startTime="now" );
     std::string generateForecastName();
     
     void setModelFileName( std::string filename ) {wxModelFileName = filename;}

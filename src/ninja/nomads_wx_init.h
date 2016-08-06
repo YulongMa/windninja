@@ -43,7 +43,7 @@ public:
     NomadsWxModel( const char *pszModelKey );
     virtual ~NomadsWxModel();
 
-    virtual std::string fetchForecast( std::string demFile, int nHours );
+    virtual std::string fetchForecast( std::string demFile, int nHours, std::string startTime="now" );
 
     virtual std::vector<blt::local_date_time>
         getTimeList(const char *pszVariable, blt::time_zone_ptr timeZonePtr);

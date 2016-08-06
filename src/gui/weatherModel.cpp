@@ -46,6 +46,13 @@ weatherModel::weatherModel(QWidget *parent) : QWidget(parent)
     modelComboBox = new QComboBox(this);
     modelComboBox->setDuplicatesEnabled(false);
 
+    startTimeEdit = new QDateTimeEdit(this);
+    startTimeEdit->setDateTime(QDateTime::currentDateTime());
+    startTimeEdit->setMaximumDateTime(QDateTime::currentDateTime());
+    startTimeEdit->setCalendarPopup(true);
+    startTimeEdit->setDisplayFormat("MM/dd/yyyy HH:mm");
+    startTimeEdit->setEnabled(false);
+
     hourSpinBox =  new QSpinBox(this);
     hourSpinBox->setRange(3, 84);
     hourSpinBox->setSingleStep(1);
@@ -87,6 +94,8 @@ weatherModel::weatherModel(QWidget *parent) : QWidget(parent)
     refreshToolButton->setToolTip(tr("Refresh the forecast listing."));
     refreshToolButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
+    connect(modelComboBox, SIGNAL(currentIndexChanged(const QString &)),
+            this, SLOT(updateStartEdit(const QString &)));
     connect(downloadToolButton, SIGNAL(clicked()),
         this, SLOT(getData()));
     connect(refreshToolButton, SIGNAL(clicked()),
@@ -107,6 +116,7 @@ weatherModel::weatherModel(QWidget *parent) : QWidget(parent)
     //layout
     downloadLayout = new QHBoxLayout;
     downloadLayout->addWidget(modelComboBox);
+    downloadLayout->addWidget(startTimeEdit);
     downloadLayout->addWidget(hourSpinBox);
     downloadLayout->addWidget(downloadToolButton);
 
@@ -250,6 +260,8 @@ void weatherModel::getData()
 
     wxModelInitialization *model;
 
+    const char *pszRefTime = NULL;
+
     if( inputFile.isEmpty() ) {
     statusLabel->setText( "No input dem file specified" );
     setCursor(Qt::ArrowCursor);
@@ -271,6 +283,14 @@ void weatherModel::getData()
     {
 #ifdef WITH_NOMADS_SUPPORT
         model = papoNomads[modelChoice - 5];
+        QDateTime dt = startTimeEdit->dateTime();
+
+        // Set up a readable time for NOMADS, "YYYYmmddTHH:MM:SS"
+        pszRefTime =
+            CPLStrdup(CPLSPrintf("%d%02d%02dT%02d:%02d:00", dt.date().year(),
+                                 dt.date().month(), dt.date().day(),
+                                 dt.time().hour(), dt.time().minute()));
+        qDebug() << pszRefTime;
         /*
         ** Disable progress on 32-bit windows as we segfault.
         */
@@ -490,4 +510,17 @@ void weatherModel::setComboToolTip(int)
     QString s = modelComboBox->currentText();
     s = ExpandDescription( s.toLocal8Bit().data() );
     modelComboBox->setToolTip( s );
+}
+
+void weatherModel::updateStartEdit(const QString &model) {
+  qDebug() << model;
+  // If the model is from UCAR, we don't support back cast
+  if (model.isEmpty() || model.startsWith("UCAR") || model.contains("RTMA")) {
+    startTimeEdit->setDateTime(QDateTime::currentDateTime());
+    startTimeEdit->setEnabled(false);
+    return;
+  } else if (model.startsWith("NOMADS")) {
+    startTimeEdit->setMinimumDateTime(QDateTime::currentDateTime().addDays(-30));
+    startTimeEdit->setEnabled(true);
+  }
 }

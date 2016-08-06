@@ -204,7 +204,7 @@ double NomadsWxModel::getGridResolution()
     return resolution;
 }
 
-std::string NomadsWxModel::fetchForecast( std::string demFile, int nHours )
+std::string NomadsWxModel::fetchForecast( std::string demFile, int nHours, std::string startTime )
 {
     if( !ppszModelData )
     {
@@ -237,8 +237,13 @@ std::string NomadsWxModel::fetchForecast( std::string demFile, int nHours )
     /* Copy the temp file, many CPL calls in NomadsFetch */
     pszTmpFile = CPLStrdup( pszTmpFile );
 
-    rc = NomadsFetch( pszKey, NULL, nHours, 1, adfWENS, pszTmpFile, NULL,
+    char *pszRefTime = NULL;
+    if (startTime != "" && startTime != "now") {
+      pszRefTime = CPLStrdup(CPLSPrintf(startTime.c_str()));
+    }
+    rc = NomadsFetch( pszKey, pszRefTime, nHours, 1, adfWENS, pszTmpFile, NULL,
                       pfnProgress );
+    CPLFree(pszRefTime);
     if( rc )
     {
         CPLFree( (void*)pszTmpFile );
@@ -968,4 +973,3 @@ void NomadsWxModel::set3dGrids( WindNinjaInputs &input, Mesh const& mesh )
 #endif /* NOMADS_ENABLE_3D */
     return;
 }
-

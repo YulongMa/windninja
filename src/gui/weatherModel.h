@@ -32,6 +32,7 @@
 
 #include <QCoreApplication>
 #include <QComboBox>
+#include <QDebug>
 #include <QGroupBox>
 #include <QToolButton>
 #include <QLabel>
@@ -39,6 +40,7 @@
 #include <QDirModel>
 #include <QTreeView>
 #include <QHeaderView>
+#include <QDateTimeEdit>
 #include <QDateTime>
 #include <QProgressDialog>
 #include <QDir>
@@ -94,7 +96,7 @@ class weatherModel : public QWidget
     QGroupBox *weatherGroupBox;
     QGroupBox *downloadGroupBox;
     QComboBox *modelComboBox;
-    QSpinBox *daySpinBox;
+    QDateTimeEdit *startTimeEdit;
     QSpinBox *hourSpinBox;
     QToolButton *downloadToolButton;
 
@@ -146,6 +148,7 @@ class weatherModel : public QWidget
     void unselectForecast( bool checked );
     void setTimeLimits( int index );
     void setComboToolTip( int index );
+    void updateStartEdit(const QString &model);
  public slots:
     void checkForModelData();
     void updateTz( QString tz );
