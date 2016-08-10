@@ -896,6 +896,21 @@ char * NomadsFormName( const char *pszKey, char pszSpacer )
     }
     return t;
 }
+/* Convenience for getting the forecast run stride for display */
+int NomadsForecastStride(const char *pszKey) {
+  const char **ppszKey = NomadsFindModel(pszKey);
+  if (ppszKey == NULL) {
+    return 0;
+  }
+  char **papszTokens =
+      CSLTokenizeString2(ppszKey[NOMADS_FCST_RUN_HOURS], ":", 0);
+  if (papszTokens == NULL || CSLCount(papszTokens) < 3) {
+    return 0;
+  }
+  int n = atoi(papszTokens[2]);
+  CSLDestroy(papszTokens);
+  return n;
+}
 
 /* Directly fetch the archive time in days */
 int NomadsArchiveDays(const char *pszKey) {

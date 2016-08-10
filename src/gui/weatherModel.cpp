@@ -519,20 +519,28 @@ void weatherModel::updateStartEdit(int model) {
   QString name = modelComboBox->itemText(model);
   QString data = modelComboBox->itemData(model).toString();
   qDebug() << name;
+  QDateTime dt = QDateTime::currentDateTime();
+  QTime t = dt.time();
+  dt.setTime(QTime(t.hour(), 0, 0));
   // If the model is from UCAR, we don't support back cast.  The NOMADS RTMA is
   // near real-time as well, so we omit herekkkkk if (model.isEmpty() ||
   // model.startsWith("UCAR") || model.contains("RTMA")) {
   if (name.startsWith("UCAR")) {
-    startTimeEdit->setDateTime(QDateTime::currentDateTime());
+    startTimeEdit->setDateTime(dt);
     startTimeEdit->setEnabled(false);
   } else {
 #ifdef WITH_NOMADS_SUPPORT
     int nDays = NomadsArchiveDays(data.toLocal8Bit().data());
+    int nHours = NomadsForecastStride(data.toLocal8Bit().data());
 #else
     int nDays = 0;
+    int nHours = 1;
 #endif
-    startTimeEdit->setMinimumDateTime(
-        QDateTime::currentDateTime().addDays(-nDays));
+    while (dt.time().hour() % nHours != 0) {
+      dt.addSecs(-60 * 60);
+    }
+    startTimeEdit->setDateTime(dt);
+    startTimeEdit->setMinimumDateTime(dt.addDays(-nDays));
     startTimeEdit->setEnabled(true);
   }
 }

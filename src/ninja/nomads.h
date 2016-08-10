@@ -541,6 +541,8 @@ const char ** NomadsFindModel( const char *pszKey );
 
 char * NomadsFormName( const char *pszKey, char pszSpacer );
 
+int NomadsForecastStride( const char *pszKey );
+
 int NomadsArchiveDays( const char *pszKey );
 
 void NomadsFree( void *p );
