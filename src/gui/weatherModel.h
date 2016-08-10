@@ -148,7 +148,7 @@ class weatherModel : public QWidget
     void unselectForecast( bool checked );
     void setTimeLimits( int index );
     void setComboToolTip( int index );
-    void updateStartEdit(const QString &model);
+    void updateStartEdit(int model);
  public slots:
     void checkForModelData();
     void updateTz( QString tz );

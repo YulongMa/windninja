@@ -115,7 +115,7 @@ extern "C" {
                                          "700_mb,675_mb,650_mb,625_mb,600_mb," \
                                          "575_mb,550_mb,525_mb,500_mb," \
                                          "entire_atmosphere_(considered_as_a_single_layer)"
-
+#define NOMADS_GENERIC_ARCHIVE           "29"
 /* arg list for bounding box */
 #define NOMADS_SUBREGION                 "&subregion=&leftlon=%lf&rightlon=%lf&toplat=%lf&bottomlat=%lf"
 
@@ -145,6 +145,7 @@ extern "C" {
 ** NOMADS_GRID_RES        9       Horizontal resolution, as "value unit"
 **                                ("0.5 deg" or "12 km")
 ** NOMADS_HUMAN_READABLE  10     Human readable name
+** NOMADS_ARCHIVE_DAYS    11     Approximate number of days archived
 **
 ** The models are listed in the same order as found on the web page.  Models
 ** not yet implemented (or may never be) are marked with XXX.
@@ -163,8 +164,9 @@ extern "C" {
 #define NOMADS_LEVELS               8
 #define NOMADS_GRID_RES             9
 #define NOMADS_HUMAN_READABLE       10
+#define NOMADS_ARCHIVE_DAYS         11
 
-static const char *apszNomadsKeys[][11] =
+static const char *apszNomadsKeys[][12] =
 {
     /*
     ** GFS
@@ -211,7 +213,8 @@ static const char *apszNomadsKeys[][11] =
       "0.25 deg",
 #endif
       /* Human readable name */
-      "GFS Global" },
+      "GFS Global",
+      NOMADS_GENERIC_ARCHIVE },
     /* XXX: Climate Forecast System Flux (CFS)??? */
     /*
     ** HIRES Alaska
@@ -227,7 +230,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "5 km",
-      "HIRES ARW Alaska" },
+      "HIRES ARW Alaska",
+      NOMADS_GENERIC_ARCHIVE },
     /*
     ** HIRES Alaska NMM
     */
@@ -242,7 +246,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "5 km",
-      "HIRES NMM Alaska" },
+      "HIRES NMM Alaska",
+      NOMADS_GENERIC_ARCHIVE },
     /*
     ** HIRES CONUS
     */
@@ -257,7 +262,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "5 km",
-      "HIRES ARW CONUS" },
+      "HIRES ARW CONUS", 
+      NOMADS_GENERIC_ARCHIVE },
     /*
     ** HIRES CONUS NMM
     */
@@ -272,7 +278,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "5 km",
-      "HIRES NMM CONUS" },
+      "HIRES NMM CONUS", 
+      NOMADS_GENERIC_ARCHIVE },
     /* XXX: HIRES Guam */
     /* XXX: HIRES Hawaii */
     /* XXX: HIRES Puerto Rico */
@@ -290,7 +297,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "11.25 km",
-      "NAM Alaska" },
+      "NAM Alaska", 
+      NOMADS_GENERIC_ARCHIVE },
     /*
     ** NAM CONUS
     */
@@ -310,7 +318,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_LEVELS_LIST,
 #endif
       "12 km",
-      "NAM CONUS" },
+      "NAM CONUS", 
+      NOMADS_GENERIC_ARCHIVE },
     /*
     ** NAM North America
     */
@@ -325,7 +334,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "32 km",
-      "NAM North America" },
+      "NAM North America", 
+      NOMADS_GENERIC_ARCHIVE },
     /* XXX: NAM Caribbean/Central America */
     /* XXX: NAM Pacific */
 #ifdef NOMADS_EXPER_FORECASTS
@@ -347,7 +357,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "6 km",
-      "NAM NEST Alaska" },
+      "NAM NEST Alaska", 
+      NOMADS_GENERIC_ARCHIVE },
     /*
     ** NAM CONUS NEST
     */
@@ -362,7 +373,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "4 km",
-      "NAM NEST CONUS" },
+      "NAM NEST CONUS", 
+      NOMADS_GENERIC_ARCHIVE },
     /* XXX: NAM Hawaii NEST */
     /* XXX: NAM Puerto Rico NEST */
     /* Alaska RTMA */
@@ -377,7 +389,8 @@ static const char *apszNomadsKeys[][11] =
       "TMP,UGRD,VGRD",
       "10_m_above_ground,2_m_above_ground",
       "2.5 km",
-      "RTMA ALASKA" },
+      "RTMA ALASKA", 
+      "1" },
 #endif /* NOMADS_EXPER_FORECASTS */
 #ifdef NOMADS_RTMA
     /*
@@ -394,7 +407,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "2.5 km",
-      "RTMA CONUS" },
+      "RTMA CONUS",
+      "1" },
 #endif /* NOMADS_RTMA */
 #ifdef NOMADS_EXPER_FORECASTS
     /* Guam RTMA */
@@ -409,7 +423,8 @@ static const char *apszNomadsKeys[][11] =
       "TMP,UGRD,VGRD",
       "10_m_above_ground,2_m_above_ground",
       "2.5 km",
-      "RTMA GUAM" },
+      "RTMA GUAM",
+      "1" },
     /* Hawaii RTMA */
     {
       "rtma_hi",
@@ -422,7 +437,8 @@ static const char *apszNomadsKeys[][11] =
       "TMP,UGRD,VGRD",
       "10_m_above_ground,2_m_above_ground",
       "2.5 km",
-      "RTMA HAWAII" },
+      "RTMA HAWAII",
+      "1" },
     /* Puerto Rico RTMA */
     {
       "rtma_pr",
@@ -435,7 +451,8 @@ static const char *apszNomadsKeys[][11] =
       "TMP,UGRD,VGRD",
       "10_m_above_ground,2_m_above_ground",
       "2.5 km",
-      "RTMA PUERTO RICO" },
+      "RTMA PUERTO RICO",
+      "1" },
 #endif /* NOMADS_EXPER_FORECASTS */
     /*
     ** HRRR
@@ -452,7 +469,8 @@ static const char *apszNomadsKeys[][11] =
       "2_m_above_ground,10_m_above_ground," \
       "entire_atmosphere",
       "3 km",
-      "HRRR CONUS" },
+      "HRRR CONUS",
+      "1" },
     /*
     ** RAP
     */
@@ -467,7 +485,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "13 km",
-      "RAP CONUS" },
+      "RAP CONUS",
+      "1" },
     /*
     ** RAP North America
     */
@@ -482,7 +501,8 @@ static const char *apszNomadsKeys[][11] =
       NOMADS_GENERIC_VAR_LIST,
       NOMADS_GENERIC_LEVELS_LIST,
       "32 km",
-      "RAP North America" },
+      "RAP North America",
+      "1" },
 #ifdef NOMADS_EXPER_FORECASTS
     /*
     ** NARRE
@@ -498,7 +518,8 @@ static const char *apszNomadsKeys[][11] =
       "UGRD,VGRD",
       "10_m_above_ground",
       "11 km",
-      "NARR" },
+      "NARR",
+      "9000" },
 #endif /* NOMADS_EXPER_FORECASTS */
     { NULL, NULL, NULL, NULL, NULL,
       NULL, NULL, NULL, NULL, NULL,
@@ -519,6 +540,8 @@ int NomadsFetch( const char *pszModelKey,  const char *pszRefTime,
 const char ** NomadsFindModel( const char *pszKey );
 
 char * NomadsFormName( const char *pszKey, char pszSpacer );
+
+int NomadsArchiveDays( const char *pszKey );
 
 void NomadsFree( void *p );
 

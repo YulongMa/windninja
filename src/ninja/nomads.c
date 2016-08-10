@@ -897,6 +897,15 @@ char * NomadsFormName( const char *pszKey, char pszSpacer )
     return t;
 }
 
+/* Directly fetch the archive time in days */
+int NomadsArchiveDays(const char *pszKey) {
+  const char **ppszKey = NomadsFindModel(pszKey);
+  if (ppszKey == NULL) {
+    return 0;
+  }
+  return atoi(ppszKey[NOMADS_ARCHIVE_DAYS]);
+}
+
 void NomadsFree( void *p )
 {
     CPLFree( p );

@@ -94,8 +94,8 @@ weatherModel::weatherModel(QWidget *parent) : QWidget(parent)
     refreshToolButton->setToolTip(tr("Refresh the forecast listing."));
     refreshToolButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 
-    connect(modelComboBox, SIGNAL(currentIndexChanged(const QString &)),
-            this, SLOT(updateStartEdit(const QString &)));
+    connect(modelComboBox, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(updateStartEdit(int)));
     connect(downloadToolButton, SIGNAL(clicked()),
         this, SLOT(getData()));
     connect(refreshToolButton, SIGNAL(clicked()),
@@ -198,12 +198,13 @@ void weatherModel::loadModelComboBox()
     modelComboBox->addItem( QString::fromStdString(gfs.getForecastIdentifier() ) );
 #ifdef WITH_NOMADS_SUPPORT
     /* Nomads */
-    QString s;
+    QString s, data;
     for( int i = 0; i < nNomadsCount; i++ )
     {
         s = QString::fromStdString( papoNomads[i]->getForecastReadable( '-' ) );
         s = s.toUpper();
-        modelComboBox->addItem( s );
+        data = apszNomadsKeys[i][NOMADS_NAME];
+        modelComboBox->addItem( s, QVariant(data) );
     }
 #endif
 }
@@ -514,16 +515,20 @@ void weatherModel::setComboToolTip(int)
     modelComboBox->setToolTip( s );
 }
 
-void weatherModel::updateStartEdit(const QString &model) {
-  qDebug() << model;
+void weatherModel::updateStartEdit(int model) {
+  QString name = modelComboBox->itemText(model);
+  QString data = modelComboBox->itemData(model).toString();
+  qDebug() << name;
   // If the model is from UCAR, we don't support back cast.  The NOMADS RTMA is
-  // near real-time as well, so we omit here.
-  if (model.isEmpty() || model.startsWith("UCAR") || model.contains("RTMA")) {
+  // near real-time as well, so we omit herekkkkk if (model.isEmpty() ||
+  // model.startsWith("UCAR") || model.contains("RTMA")) {
+  if (name.startsWith("UCAR")) {
     startTimeEdit->setDateTime(QDateTime::currentDateTime());
     startTimeEdit->setEnabled(false);
-    return;
-  } else if (model.startsWith("NOMADS")) {
-    startTimeEdit->setMinimumDateTime(QDateTime::currentDateTime().addDays(-30));
+  } else {
+    int nDays = NomadsArchiveDays(data.toLocal8Bit().data());
+    startTimeEdit->setMinimumDateTime(
+        QDateTime::currentDateTime().addDays(-nDays));
     startTimeEdit->setEnabled(true);
   }
 }
