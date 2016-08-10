@@ -115,7 +115,7 @@ extern "C" {
                                          "700_mb,675_mb,650_mb,625_mb,600_mb," \
                                          "575_mb,550_mb,525_mb,500_mb," \
                                          "entire_atmosphere_(considered_as_a_single_layer)"
-#define NOMADS_GENERIC_ARCHIVE           "29"
+#define NOMADS_GENERIC_ARCHIVE           "28"
 /* arg list for bounding box */
 #define NOMADS_SUBREGION                 "&subregion=&leftlon=%lf&rightlon=%lf&toplat=%lf&bottomlat=%lf"
 
