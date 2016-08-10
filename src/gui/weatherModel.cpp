@@ -526,7 +526,11 @@ void weatherModel::updateStartEdit(int model) {
     startTimeEdit->setDateTime(QDateTime::currentDateTime());
     startTimeEdit->setEnabled(false);
   } else {
+#ifdef WITH_NOMADS_SUPPORT
     int nDays = NomadsArchiveDays(data.toLocal8Bit().data());
+#else
+    int nDays = 0;
+#endif
     startTimeEdit->setMinimumDateTime(
         QDateTime::currentDateTime().addDays(-nDays));
     startTimeEdit->setEnabled(true);
