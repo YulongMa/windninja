@@ -327,7 +327,7 @@ void weatherModel::getData()
         checkForModelData();
         return;
     }
-    CPLFree(pszRefTime);
+    CPLFree((void*)pszRefTime);
 
 #if !defined(NINJA_32BIT)
     if( modelChoice > 4 )
