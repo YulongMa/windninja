@@ -261,7 +261,7 @@ void weatherModel::getData()
 
     wxModelInitialization *model;
 
-    const char *pszRefTime = NULL;
+    std::string refTime = "";
 
     if( inputFile.isEmpty() ) {
     statusLabel->setText( "No input dem file specified" );
@@ -284,14 +284,17 @@ void weatherModel::getData()
     {
 #ifdef WITH_NOMADS_SUPPORT
         model = papoNomads[modelChoice - 5];
-        QDateTime dt = startTimeEdit->dateTime();
+        QDateTime dt = startTimeEdit->dateTime().toUTC();
 
         // Set up a readable time for NOMADS, "YYYYmmddTHH:MM:SS"
+        const char *pszRefTime = NULL;
         pszRefTime =
             CPLStrdup(CPLSPrintf("%d%02d%02dT%02d:%02d:00", dt.date().year(),
                                  dt.date().month(), dt.date().day(),
                                  dt.time().hour(), dt.time().minute()));
         qDebug() << pszRefTime;
+        refTime = std::string(pszRefTime);
+        CPLFree((void*)pszRefTime);
         /*
         ** Disable progress on 32-bit windows as we segfault.
         */
@@ -309,7 +312,7 @@ void weatherModel::getData()
     }
 
     try {
-        model->fetchForecast( inputFile.toStdString(), hours, pszRefTime );
+        model->fetchForecast( inputFile.toStdString(), hours, refTime);
     }
     catch( badForecastFile &e ) {
         progressDialog->close();
@@ -328,7 +331,6 @@ void weatherModel::getData()
         checkForModelData();
         return;
     }
-    CPLFree((void*)pszRefTime);
 
 #if !defined(NINJA_32BIT)
     if( modelChoice > 4 )
