@@ -254,6 +254,7 @@ public:
     void set_meshResChoice( std::string choice );
     void set_meshResChoice( const Mesh::eMeshChoice );
     void set_meshResolution( double resolution, lengthUnits::eLengthUnits units );
+    virtual double get_meshResolution();
     void set_numVertLayers( const int nLayers );
 #ifdef NINJA_SPEED_TESTING
     void set_speedDampeningRatio(double r);
@@ -284,7 +285,7 @@ public:
     void set_MeshCount(WindNinjaInputs::eNinjafoamMeshChoice meshChoice); //mesh count for a ninjafoam run
     void set_NonEqBc(bool flag); // enable/disable non-equilbrium boundary conditions for a ninjafoam run
     static WindNinjaInputs::eNinjafoamMeshChoice get_eNinjafoamMeshChoice(std::string meshChoice);
-    void set_StlFile(std::string stlFile); 
+    void set_ExistingCaseDirectory(std::string directory); //use existing case for ninjafoam run
 #endif
 
     void set_speedFile(std::string speedFile);
@@ -292,7 +293,6 @@ public:
 
     void set_position(double lat_degrees, double long_degrees);//input as decimal degrees
 
-    void set_outputPointsFlag(bool flag);
     void set_inputPointsFilename(std::string filename); //set name for input file of requested output locations
     void set_outputPointsFilename(std::string filename); //set name for output file with winds at requested locations
 
@@ -329,6 +329,8 @@ public:
     void set_pdfResolution(double Resolution, lengthUnits::eLengthUnits units);
     void set_pdfDEM(std::string dem_file_name);
     void set_pdfLineWidth(const float w);
+    void set_pdfBaseMap(const int b);
+    void set_pdfSize( const double height, const double width, const unsigned short dpi );
     void set_outputFilenames(double& meshResolution, lengthUnits::eLengthUnits meshResolutionUnits);
     const std::string get_outputPath() const;
     void keepOutputGridsInMemory(bool flag);

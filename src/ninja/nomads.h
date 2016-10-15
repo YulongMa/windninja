@@ -62,7 +62,9 @@ extern "C" {
 #define NOMADS_YMIN 3
 #define NOMADS_YMAX 2
 
+#ifndef SKIP_DOT_AND_DOTDOT
 #define SKIP_DOT_AND_DOTDOT(a) if(EQUAL(a,"..")||EQUAL(a,".")) continue
+#endif
 
 /*
 ** We can't do threaded download on older GDAL versions (pre-1.10.0) due to
@@ -83,19 +85,9 @@ extern "C" {
 ** to lookup the ip from the hostname using DNS.  This is an attempt to work
 ** around that.  It has been fixed in GDAL 1.11.x.  Older versions may want to
 ** try defining NOMADS_USE_IP.
-**
-** If NOMADS_TEST_PARA is set, use the parallel test server for pre-release
-** testing.
 */
-#ifdef NOMADS_TEST_PARA
- #define NOMADS_IP                        "140.172.17.38"
- #define NOMADS_HOST                      "para.nomads.ncep.noaa.gov"
- #define NOMADS_PERL_SCRIPT(s)            s ## _para.pl
-#else /* NOMADS_TEST_PARA */
- #define NOMADS_IP                        "140.90.101.62"
- #define NOMADS_HOST                      "nomads.ncep.noaa.gov"
- #define NOMADS_PERL_SCRIPT(s)            s ## .pl
-#endif /* NOMADS_TEST_PARA */
+#define NOMADS_IP                        "140.90.101.62"
+#define NOMADS_HOST                      "nomads.ncep.noaa.gov"
 
 /* Host for NOMADS */
 #define NOMADS_URL_CGI_HOST              "http://" NOMADS_HOST "/cgi-bin/"
@@ -473,7 +465,12 @@ static const char *apszNomadsKeys[][11] =
       "0:23:1",
       "0:18:1",
       NOMADS_GENERIC_VAR_LIST,
-      NOMADS_GENERIC_LEVELS_LIST,
+      /*
+      ** The August 2016 TIN changed the level for cloud cover to
+      ** entire_atmosphere.  Request both levels so if they change it, we won't
+      ** fail.
+      */
+      NOMADS_GENERIC_LEVELS_LIST ",entire_atmosphere",
       "13 km",
       "RAP CONUS" },
     /*
@@ -488,7 +485,7 @@ static const char *apszNomadsKeys[][11] =
       "0:23:1",
       "0:18:1",
       NOMADS_GENERIC_VAR_LIST,
-      NOMADS_GENERIC_LEVELS_LIST,
+      NOMADS_GENERIC_LEVELS_LIST ",entire_atmosphere",
       "32 km",
       "RAP North America" },
 #ifdef NOMADS_EXPER_FORECASTS

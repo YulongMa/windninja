@@ -113,7 +113,6 @@ public:
         ncepGfsSurf
     };
 
-    std::string fetch_wxForecast(eWxModelType modelType, int nHours, std::string demFileName);
     void makeArmy(std::string forecastFilename, std::string timeZone);
     void set_writeFarsiteAtmFile(bool flag);
     bool startRuns(int numProcessors);
@@ -333,16 +332,16 @@ public:
     * \return errval Returns NINJA_SUCCESS upon success
     */
     int setNonEqBc( const int nIndex, const bool flag, char ** papszOptions=NULL );
-        
+
     /**
-    * \brief Set the type of STL file for a NinjaFOAM run
+    * \brief Set the path to an existing case for a NinjaFOAM run
     *
     * \param nIndex index of a ninja
-    * \param stlFile path/filename of STL file
+    * \param  path to existing directory 
     * \return errval Returns NINJA_SUCCESS upon success
     */
-    int setStlFile( const int nIndex, const std::string stlFile, char ** papszOptions=NULL );
-    
+    int setExistingCaseDirectory( const int nIndex, const std::string directory, char ** papszOptions=NULL );
+        
 #endif //NINJAFOAM
 
     /*-----------------------------------------------------------------------------
@@ -396,16 +395,7 @@ public:
     */
     int setOutputPointsFilename( const int nIndex, const std::string filename,
                                 char **papszOptions=NULL);
-    /**
-    * \brief Enable/disable output points for a ninja
-    *
-    *
-    * \param nIndex index of a ninja
-    * \param flag Enables output points if true, disables if false
-    * \return errval Returns NINJA_SUCCESS upon success
-    */
-    int setOutputPointsFlag( const int nIndex, const bool flag,
-                             char ** papszOptions=NULL);
+
     int readInputFile( const int nIndex, std::string filename, char ** papszOptions=NULL );
     int readInputFile( const int nIndex, char ** papszOptions=NULL );
     /*-----------------------------------------------------------------------------
@@ -1110,7 +1100,21 @@ public:
     /* ----------------------------------------------------------------------------*/
     int setPDFLineWidth( const int nIndex, const float linewidth, char ** papszOptions=NULL );
 
+    /**
+     * \brief Set the background image of the PDF (default is attempt at topo
+     *        map)
+     *
+     * \param nIndex index of a ninja
+     * \param eType 0->hillshade, 1->topo map
+     * \return NINJA_SUCCESS if valid type is provided.
+     */
+    int setPDFBaseMap( const int nIndex,
+                       const int linewidth );
+
     int setPDFDEM( const int nIndex, const std::string dem_filename, char ** papszOptions=NULL );
+
+    int setPDFSize( const int nIndex, const double height, const double width,
+                    const unsigned short dpi );
     /**
     * \brief Returns the output path of a ninja
     *
@@ -1137,8 +1141,19 @@ protected:
     bool writeFarsiteAtmFile;
     void writeFarsiteAtmosphereFile();
     void setAtmFlags();
-    
-    
+
+    /*
+    ** This function initializes various data for the lifetime of the
+    ** ninjaArmy.  This should be used for various tasks, such as downloading
+    ** the color relief for the background of the PDF file.  It is the same for
+    ** all runs, is the same for all runs.
+    */
+    void initLocalData(void);
+    void destoryLocalData(void);
+    void copyLocalData( const ninjaArmy &A );
+
+private:
+    char *pszTmpColorRelief;
 };
 
 #endif /* NINJA_ARMY_H */

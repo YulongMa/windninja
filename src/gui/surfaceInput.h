@@ -55,6 +55,12 @@ class surfaceInput : public QWidget
 public:
     surfaceInput(QWidget *parent = 0);
 
+#ifdef NINJAFOAM
+    QGroupBox *foamCaseGroupBox;
+    QLineEdit *foamCaseLineEdit;
+    QToolButton *foamCaseOpenToolButton;
+#endif
+
     QGroupBox *inputFileGroupBox;
 
     QLineEdit *inputFileLineEdit;
@@ -73,6 +79,9 @@ public:
     QGroupBox *timeZoneGroupBox;
     timeZoneWidget *timeZone;
 
+#ifdef NINJAFOAM
+    QHBoxLayout *foamCaseLayout;
+#endif
     QHBoxLayout *inputLayout;
     QHBoxLayout *roughnessLayout;
     QHBoxLayout *roughnessLabelLayout;
@@ -80,7 +89,6 @@ public:
     QHBoxLayout *timeZoneLayout;
     QVBoxLayout *mainLayout;
     
-    QLabel *ninjafoamConflictLabel;
 signals:
     void writeToMainConsole(QString message);
 

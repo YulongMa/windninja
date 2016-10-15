@@ -37,6 +37,10 @@
 #include "cpl_multiproc.h"
 #include "cpl_http.h"
 
+#include <stdlib.h>
+
+#include "boost/date_time/local_time/local_time.hpp"
+
 int NinjaInitialize();
 
 #endif /* NINJA_INIT_H_ */

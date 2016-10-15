@@ -31,6 +31,36 @@
 
 #include "ninja_conv.h"
 
+/** Fetch the max value of a dataset.
+ * Fetch the max value from any valid GDAL dataset
+ * @param poDS a pointer to a valid GDAL Dataset
+ * @return max value 
+ */
+double GDALGetMax( GDALDataset *poDS )
+{
+    GDALRasterBand *poBand = poDS->GetRasterBand( 1 );
+    double adfMinMax[2];
+
+    GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
+
+    return adfMinMax[1];
+}
+
+/** Fetch the min value of a dataset.
+ * Fetch the min value from any valid GDAL dataset
+ * @param poDS a pointer to a valid GDAL Dataset
+ * @return min value 
+ */
+double GDALGetMin( GDALDataset *poDS )
+{
+    GDALRasterBand *poBand = poDS->GetRasterBand( 1 );
+    double adfMinMax[2];
+
+    GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
+
+    return adfMinMax[0];
+}
+
 /** Fetch the center of a domain.
  * Fetch the center of a domain from any valid GDAL dataset
  * @param poDS a pointer to a valid GDAL Dataset
@@ -370,46 +400,42 @@ bool GDALPointToLatLon( double &x, double &y, GDALDataset *poSrcDS,
     return true;
 }
 
-bool OGRPointToLatLon( double &x, double &y, OGRDataSource *poSrcDS,
-				const char *datum )
-{
-    char* pszPrj = NULL;
+bool OGRPointToLatLon(double &x, double &y, OGRDataSourceH hDS,
+                      const char *datum) {
+  char *pszPrj = NULL;
 
-    OGRSpatialReference oSourceSRS, oTargetSRS;
-    OGRCoordinateTransformation *poCT;
+  OGRSpatialReference *poSrcSRS;
+  OGRSpatialReference oSourceSRS, oTargetSRS;
+  OGRCoordinateTransformation *poCT;
 
-    if( poSrcDS == NULL )
-	return false;
-	
-	OGRLayer *poLayer;
-    
-    poLayer = poSrcDS->GetLayer(0);
-    poLayer->ResetReading();
-    
-    OGRSpatialReference *poSrcSRS;
-	
-    if( poLayer->GetSpatialRef() == NULL )
-        return false;
-    else{
-        poSrcSRS = poLayer->GetSpatialRef();
-        poSrcSRS->exportToWkt( &pszPrj );
-    }
+  if (hDS == NULL) {
+    return false;
+  }
 
-    oSourceSRS.importFromWkt( &pszPrj );
-    
-    oTargetSRS.SetWellKnownGeogCS( datum );
+  OGRLayer *poLayer;
 
-    poCT = OGRCreateCoordinateTransformation( &oSourceSRS, &oTargetSRS );
+  poLayer = (OGRLayer *)OGR_DS_GetLayer(hDS, 0);
+  poLayer->ResetReading();
 
-    if( poCT == NULL )
-	return false;
+  poSrcSRS = poLayer->GetSpatialRef();
+  if (poSrcSRS == NULL) {
+    return false;
+  }
 
-    if( !poCT->Transform( 1, &x, &y ) ) {
-	OGRCoordinateTransformation::DestroyCT( poCT );
-	return false;
-    }
-    OGRCoordinateTransformation::DestroyCT( poCT );
-    return true;
+  oTargetSRS.SetWellKnownGeogCS(datum);
+
+  poCT = OGRCreateCoordinateTransformation(poSrcSRS, &oTargetSRS);
+
+  if (poCT == NULL) {
+    return false;
+  }
+
+  if (!poCT->Transform(1, &x, &y)) {
+    OGRCoordinateTransformation::DestroyCT(poCT);
+    return false;
+  }
+  OGRCoordinateTransformation::DestroyCT(poCT);
+  return true;
 }
 
 /**
@@ -691,13 +717,13 @@ std::string FetchTimeZone( double dfX, double dfY, const char *pszWkt )
 int NinjaOGRContain(const char *pszWkt, const char *pszFile,
                     const char *pszLayer)
 {
-    CPLDebug( "WINDNINJA", "Checking for containment of %s in %s:%s",
-              pszWkt, pszFile, pszLayer );
     int bContains = FALSE;
     if( pszWkt == NULL || pszFile == NULL )
     {
         return FALSE;
     }
+    CPLDebug( "WINDNINJA", "Checking for containment of %s in %s:%s",
+              pszWkt, pszFile, pszLayer ? pszLayer : "" );
     OGRGeometryH hTestGeometry = NULL;
     int err = OGR_G_CreateFromWkt( (char**)&pszWkt, NULL, &hTestGeometry );
     if( hTestGeometry == NULL || err != CE_None )
@@ -743,4 +769,3 @@ int NinjaOGRContain(const char *pszWkt, const char *pszFile,
     OGR_DS_Destroy( hDS );
     return bContains;
 }
-

@@ -54,7 +54,7 @@
 #include "gdal_util.h"
 #include "startRuns.h"
 #include "ninja.h"
-#include "version.h"
+#include "ninja_version.h"
 #include "WindNinjaTree.h"
 #include "consoleDockWidget.h"
 #include "solveThread.h"
@@ -93,6 +93,7 @@ class mainWindow : public QMainWindow
 
   public slots:
    void updateProgress(int run, int progress);
+   void updateProgress(const QString message);
    void updateTimer();
    void openDEMDownloader();
 
@@ -104,6 +105,9 @@ class mainWindow : public QMainWindow
 
   enum eInputFileType{
     ASC, LCP, GTIFF, IMG};
+#ifdef NINJAFOAM
+  QString existingCaseDir;
+#endif
   QString inputFileName;
   QDir inputFileDir;
   QString shortInputFileName;
@@ -126,6 +130,7 @@ class mainWindow : public QMainWindow
   double GDALCenterLon;
   int GDALXSize, GDALYSize;
   double GDALCellSize, GDALNoData;
+  double GDALMaxValue, GDALMinValue;
 
   //threshold for no-googling = 400000
 
@@ -138,6 +143,10 @@ class mainWindow : public QMainWindow
   void inputFileChanged(QString newFile);
 
  public slots:
+#ifdef NINJAFOAM  
+  void openExistingCase();
+  void updateFileInputForCase(const char* file);
+#endif
   void openInputFile();
   void updateFileInput(const char* file);
   void inputFileDeleted();
@@ -202,6 +211,7 @@ class mainWindow : public QMainWindow
   int checkGoogleItem();
   int checkFbItem();
   int checkShapeItem();
+  int checkPdfItem();
   int checkVtkItem();
   int checkSolveItem();
   int checkAllItems();

@@ -29,6 +29,8 @@
 
 #include "ninja.h"
 
+extern boost::local_time::tz_database globalTimeZoneDB;
+
 /**Ninja constructor
  * This is the default ninja constructor.
  */
@@ -2285,6 +2287,22 @@ void ninja::prepareOutput()
 	
 	if(!isNullRun)
 		interp_uvw();
+ 
+        if(input.initializationMethod == WindNinjaInputs::foamInitializationFlag){
+            //Set cloud grid
+            int longEdge = input.dem.get_nRows();
+            if(input.dem.get_nRows() < input.dem.get_nCols())
+                    longEdge = input.dem.get_nCols();
+            double tempCloudCover;
+            if(input.cloudCover < 0)
+                tempCloudCover = 0.0;
+            else
+                tempCloudCover = input.cloudCover;
+            CloudGrid.set_headerData(1, 1, input.dem.get_xllCorner(), 
+                    input.dem.get_yllCorner(),
+                    (longEdge * input.dem.cellSize), 
+                    -9999.0, tempCloudCover, input.dem.prjString);
+        }
 
 	//Clip off bounding doughnut if desired
 	VelocityGrid.clipGridInPlaceSnapToCells(input.outputBufferClipping);
@@ -2757,7 +2775,6 @@ void ninja::computeDustEmissions()
 
 void ninja::writeOutputFiles()
 {
-    
     set_outputFilenames(mesh.meshResolution, mesh.meshResolutionUnits);
 
 	//Write volume data to VTK format (always in m/s?)
@@ -2797,6 +2814,12 @@ void ninja::writeOutputFiles()
 
 			AsciiGrid<double> tempCloud(CloudGrid);
 			tempCloud *= 100.0;  //Change to percent, which is what FARSITE needs
+
+                        //ensure grids cover original DEM extents for FARSITE
+                        tempCloud.BufferGridInPlace();
+                        angTempGrid->BufferGridInPlace();
+                        velTempGrid->BufferGridInPlace();
+
 			tempCloud.write_Grid(input.cldFile.c_str(), 1);
 			angTempGrid->write_Grid(input.angFile.c_str(), 0);
 			velTempGrid->write_Grid(input.velFile.c_str(), 2);
@@ -3034,9 +3057,11 @@ void ninja::writeOutputFiles()
 			velTempGrid = new AsciiGrid<double> (VelocityGrid.resample_Grid(input.pdfResolution, AsciiGrid<double>::order0));
 
 			output.setDirGrid(*angTempGrid);
-			output.setSpeedGrid(*velTempGrid);
+			output.setSpeedGrid(*velTempGrid, input.outputSpeedUnits);
             output.setDEMfile(input.pdfDEMFileName);
             output.setLineWidth(input.pdfLineWidth);
+            output.setDPI(input.pdfDPI);
+            output.setSize(input.pdfWidth, input.pdfHeight);
             output.write(input.pdfFile, "PDF");
 
 
@@ -3074,7 +3099,7 @@ void ninja::writeOutputFiles()
             output.setMaxRunNumber(input.armySize-1);
 
 			output.setDirGrid(AngleGrid);
-			output.setSpeedGrid(VelocityGrid);
+			output.setSpeedGrid(VelocityGrid, input.outputSpeedUnits);
 			
 			output.setMemDs(input.hSpdMemDs, input.hDirMemDs, input.hDustMemDs);// set the in-memory datasets
 
@@ -3541,14 +3566,15 @@ void ninja::set_MeshCount(int meshCount)
 
 void ninja::set_MeshCount(WindNinjaInputs::eNinjafoamMeshChoice meshChoice)
 {
+    //if these change, update values in GUI for horizontal resolution estimation
     if(meshChoice == WindNinjaInputs::coarse){
-        input.meshCount = 100000;
+        input.meshCount = 25000;
     }
     else if(meshChoice == WindNinjaInputs::medium){
-        input.meshCount = 500000;
+        input.meshCount = 50000;
     }
     else if(meshChoice == WindNinjaInputs::fine){
-        input.meshCount = 1e6;
+        input.meshCount = 100000;
     }
     else{
         throw std::range_error("The mesh resolution choice has been set improperly.");
@@ -3575,9 +3601,9 @@ WindNinjaInputs::eNinjafoamMeshChoice ninja::get_eNinjafoamMeshChoice(std::strin
     }
 }
 
-void ninja::set_StlFile(std::string stlFile)
+void ninja::set_ExistingCaseDirectory(std::string directory)
 {
-    input.stlFile = stlFile;
+    input.existingCaseDirectory = directory;
 }
 #endif
 
@@ -4012,10 +4038,8 @@ bool ninja::get_diurnalWindFlag()
 void ninja::set_date_time(int const &yr, int const &mo, int const &day, int const &hr,
                           int const &min, int const &sec, std::string const &timeZoneString)
 {
-//	std::vector<std::string> regions;
-//	regions = tz_db.region_list();
-
-    input.ninjaTimeZone = input.tz_db.time_zone_from_region( timeZoneString.c_str() );
+  input.ninjaTimeZone =
+      globalTimeZoneDB.time_zone_from_region(timeZoneString.c_str());
     if( NULL ==  input.ninjaTimeZone )
     {
         ostringstream os;
@@ -4197,6 +4221,11 @@ void ninja::set_meshResChoice( const Mesh::eMeshChoice choice )
 void ninja::set_meshResolution( double resolution, lengthUnits::eLengthUnits units )
 {
     mesh.set_meshResolution( resolution, units );
+}
+
+double ninja::get_meshResolution()
+{
+    return mesh.meshResolution;
 }
 
 void ninja::set_numVertLayers( const int nLayers )
@@ -4492,6 +4521,18 @@ void ninja::set_pdfLineWidth(const float w)
     input.pdfLineWidth = w;
 }
 
+void ninja::set_pdfBaseMap(const int b)
+{
+    input.pdfBaseType = (WindNinjaInputs::ePDFBaseMap)b;
+}
+
+void ninja::set_pdfSize( const double height, const double width, const unsigned short dpi )
+{
+    input.pdfHeight = height;
+    input.pdfWidth = width;
+    input.pdfDPI = dpi;
+}
+
 void ninja::set_pdfDEM(std::string dem_file_name)
 {
     /*
@@ -4536,7 +4577,7 @@ void ninja::set_outputPath(std::string path)
 {
     VSIStatBufL sStat;
     VSIStatL( path.c_str(), &sStat );
-    const char *pszTestPath = CPLFormFilename(path.c_str(), "test", "");
+    const char *pszTestPath = CPLFormFilename(path.c_str(), "NINJA_TEST", "");
     int nRet;
     
     if( VSI_ISDIR( sStat.st_mode ) ){
@@ -4651,7 +4692,8 @@ void ninja::set_outputFilenames(double& meshResolution,
     pdf_mesh_units   = lengthUnits::getString( input.pdfUnits );
 
     ostringstream os, os_kmz, os_shp, os_ascii, os_pdf;
-    if( input.initializationMethod == WindNinjaInputs::domainAverageInitializationFlag )
+    if( input.initializationMethod == WindNinjaInputs::domainAverageInitializationFlag ||
+        input.initializationMethod == WindNinjaInputs::foamInitializationFlag )
     {
         double tempSpeed = input.inputSpeed;
         velocityUnits::fromBaseUnits(tempSpeed, input.inputSpeedUnits);
@@ -4675,11 +4717,12 @@ void ninja::set_outputFilenames(double& meshResolution,
     double shpResolutionTemp = input.shpResolution;
     double velResolutionTemp = input.velResolution;
     double pdfResolutionTemp = input.pdfResolution;
+
     lengthUnits::fromBaseUnits(meshResolutionTemp, meshResolutionUnits);
-    lengthUnits::fromBaseUnits(kmzResolutionTemp, meshResolutionUnits);
-    lengthUnits::fromBaseUnits(shpResolutionTemp, meshResolutionUnits);
-    lengthUnits::fromBaseUnits(velResolutionTemp, meshResolutionUnits);
-    lengthUnits::fromBaseUnits(pdfResolutionTemp, meshResolutionUnits);
+    lengthUnits::fromBaseUnits(kmzResolutionTemp, input.kmzUnits);
+    lengthUnits::fromBaseUnits(shpResolutionTemp, input.shpUnits);
+    lengthUnits::fromBaseUnits(velResolutionTemp, input.velOutputFileDistanceUnits);
+    lengthUnits::fromBaseUnits(pdfResolutionTemp, input.pdfUnits);
 
     os << "_" << timeAppend << (long) (meshResolutionTemp+0.5)  << mesh_units;
     os_kmz << "_" << timeAppend << (long) (kmzResolutionTemp+0.5)  << kmz_mesh_units;
@@ -4920,6 +4963,29 @@ void ninja::set_ninjaCommunication(int RunNumber, ninjaComClass::eNinjaCom comTy
 
 void ninja::checkInputs()
 {
+    //Check DEM
+    GDALDataset *poDS;
+    poDS = (GDALDataset*)GDALOpen(input.dem.fileName.c_str(), GA_ReadOnly);
+    if(poDS == NULL)
+    {
+        throw std::runtime_error("Could not open DEM for reading.");
+    }
+    if(GDALHasNoData(poDS, 1))
+    {
+        throw std::runtime_error("The DEM has no data values.");
+    }
+    GDALClose((GDALDatasetH)poDS);
+
+    //check for invalid characters in DEM name
+    std::string s = std::string(CPLGetBasename(input.dem.fileName.c_str()));
+    if(s.find_first_of("0123456789") == 0){
+        throw std::runtime_error("The DEM name cannot start with a number.");
+    }
+    if(s.find_first_of("/\\:;\"'") != std::string::npos){
+        throw std::runtime_error("The DEM name contains an invalid character."
+                " The DEM name cannot contain the following characters: / \\ : ; \" '.");
+    }
+
     //Check base inputs needed for run
     if( input.dem.prjString == "" && input.googOutFlag == true )
         throw std::logic_error("Projection information in prjString is not set but should be.");

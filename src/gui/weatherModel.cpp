@@ -36,23 +36,6 @@
  */
 weatherModel::weatherModel(QWidget *parent) : QWidget(parent)
 {
-    try {
-    tz_db.load_from_file( FindDataPath("date_time_zonespec.csv") );
-    }
-    catch( boost::local_time::data_not_accessible ) {
-    qDebug() << "diurnalInput::loadBoostTimeZones():"
-         << "caught data_not_accessible";
-    //throw( new guiInitializationError( "Failed to load time zone, "
-    //				   "Cannot initialize interface. " ) );
-    }
-    catch( boost::local_time::bad_field_count ) {
-    qDebug() << "diurnalInput::loadBoostTimeZones():"
-         << "caught bad_field_count";
-    //throw( new guiInitializationError( "Failed to load time zone, "
-    //				   "Cannot initialize interface. " ) );
-    }
-    //setDisabled(true);
-
     weatherGroupBox = new QGroupBox( tr( "Weather Model Initialization" ),
                      this );
     weatherGroupBox->setCheckable( true );
@@ -294,7 +277,7 @@ void weatherModel::getData()
 #if defined(WIN32) && defined(NINJA_32BIT)
         model->SetProgressFunc( NULL );
         QCoreApplication::processEvents();
-#else /* defined(WIN32) && !defined(NINJA_64BIT) */
+#else /* defined(WIN32) && defined(NINJA_32BIT) */
         progressDialog->reset();
         progressDialog->setRange( 0, 100 );
         model->SetProgressFunc( (GDALProgressFunc)&UpdateProgress );
@@ -325,13 +308,15 @@ void weatherModel::getData()
         return;
     }
 
-#if defined(NINJA_64BIT)
+#if !defined(NINJA_32BIT)
     if( modelChoice > 4 )
     {
         progressDialog->setRange( 0, 100 );
         progressDialog->setValue( 100 );
         progressDialog->setLabelText( "Done" );
         progressDialog->setCancelButtonText( "Close" );
+        /* Should we autoclose, or ask user to close */
+        progressDialog->close();
     }
 #endif /* defined(NINJA_64BIT) */
 

@@ -37,6 +37,7 @@ ninjaArmy::ninjaArmy()
 : writeFarsiteAtmFile(false)
 {
     ninjas.push_back(new ninja());
+    initLocalData();
 }
 
 /**
@@ -59,6 +60,7 @@ ninjaArmy::ninjaArmy(int numNinjas, bool momentumFlag)
              ninjas[i] = new ninja();
         }
     }
+    initLocalData();
 }
 #endif
 
@@ -76,6 +78,7 @@ ninjaArmy::ninjaArmy(int numNinjas)
     {
         ninjas[i] = new ninja();
     }
+    initLocalData();
 }
 #endif
 
@@ -88,6 +91,7 @@ ninjaArmy::ninjaArmy(const ninjaArmy& A)
 {
     writeFarsiteAtmFile = A.writeFarsiteAtmFile;
     ninjas = A.ninjas;
+    copyLocalData( A );
 }
 
 /**
@@ -96,12 +100,11 @@ ninjaArmy::ninjaArmy(const ninjaArmy& A)
 */
 ninjaArmy::~ninjaArmy()
 {
-    GDALDriverH hDriver = GDALGetDriverByName("JPG"); 
-    GDALDeleteDataset( hDriver, ninjas[0]->input.pdfDEMFileName.c_str() );
     for(unsigned int i = 0; i < ninjas.size(); i++)
     {
        delete ninjas[i];
     }
+    destoryLocalData();
 }
 
 /**
@@ -116,6 +119,7 @@ ninjaArmy& ninjaArmy::operator= (ninjaArmy const& A)
     {
         writeFarsiteAtmFile = A.writeFarsiteAtmFile;
         ninjas = A.ninjas;
+        copyLocalData( A );
     }
     return *this;
 }
@@ -128,51 +132,6 @@ ninjaArmy& ninjaArmy::operator= (ninjaArmy const& A)
 int ninjaArmy::getSize()
 {
     return ninjas.size();
-}
-
-/**
- * @brief Fetches a weather model forecast from the Internet
- *
- * @param modelType Type of weather model to fetch.
- * @param nDays Number of forecast days to fetch.
- *
- * @return ????
- */
-std::string ninjaArmy::fetch_wxForecast(eWxModelType modelType, int nHours, std::string demFileName)
-{
-    std::cout << "Downloading the weather forecast file...\n";
-    if(modelType == ninjaArmy::ncepNdfd)
-    {
-        ncepNdfdInitialization model;
-        return model.fetchForecast(demFileName, nHours);
-    }
-    else if(modelType == ninjaArmy::ncepNamSurf)
-    {
-        ncepNamSurfInitialization model;
-        return model.fetchForecast(demFileName, nHours);
-    }
-    else if(modelType == ninjaArmy::ncepRapSurf)
-    {
-        ncepRapSurfInitialization model;
-        return model.fetchForecast(demFileName, nHours);
-    }
-    else if(modelType == ninjaArmy::ncepDgexSurf)
-    {
-        ncepDgexSurfInitialization model;
-        return model.fetchForecast(demFileName, nHours);
-    }
-    else if(modelType == ninjaArmy::ncepNamAlaskaSurf)
-    {
-        ncepNamAlaskaSurfInitialization model;
-        return model.fetchForecast(demFileName, nHours);
-    }
-    else if(modelType == ninjaArmy::ncepGfsSurf)
-    {
-        ncepGfsSurfInitialization model;
-        return model.fetchForecast(demFileName, nHours);
-    }
-    else
-        throw std::runtime_error("Can't determine weather model forecast type to download.");
 }
 
 /**
@@ -193,13 +152,12 @@ void ninjaArmy::makeArmy(std::string forecastFilename, std::string timeZone)
         while(1){
             const char* f = CPLReadLine(fcastList);
             if (f == NULL)
-                    break;
+                break;
             wxList.push_back(f);
         }
         VSIFClose(fcastList);
         
         model = wxModelInitializationFactory::makeWxInitialization(wxList[0]); 
-        
         
         ninjas.resize(wxList.size());
         
@@ -220,7 +178,6 @@ void ninjaArmy::makeArmy(std::string forecastFilename, std::string timeZone)
         }       
         delete model;
     }
-    
     
     //Factory function that identifies the type of forecast file and makes appropriate class.
     else{
@@ -275,12 +232,39 @@ void ninjaArmy::set_writeFarsiteAtmFile(bool flag)
 */
 bool ninjaArmy::startRuns(int numProcessors)
 {
-    //Com->ninjaCom(ninjaComClass::ninjaNone, "Jason Sucks!");
     int j;
     bool status = true;
 
     if(ninjas.size()<1 || numProcessors<1)
         return false;
+
+    //check for duplicate runs before we start the simulations 
+    if(ninjas.size() > 1){
+        for(unsigned int i=0; i<ninjas.size()-1; i++){
+            for(unsigned int j=i+1; j<ninjas.size(); j++){
+                if(ninjas[i]->input == ninjas[j]->input){
+                    throw std::runtime_error("Multiple runs were requested with the same input parameters.");
+                }
+            }
+        }
+    }
+#ifdef NINJAFOAM
+    //if it's a ninjafoam run and the user specified an existing case dir, set it here
+    if(ninjas[0]->identify() == "ninjafoam" & ninjas[0]->input.existingCaseDirectory != "!set"){
+        NinjaFoam::SetFoamPath(ninjas[0]->input.existingCaseDirectory.c_str());
+    }
+    //if it's a ninjafoam run and the case is not set by the user, generate the ninjafoam dir
+    if(ninjas[0]->identify() == "ninjafoam" & ninjas[0]->input.existingCaseDirectory == "!set"){
+        //force temp dir to DEM location
+        CPLSetConfigOption("CPL_TMPDIR", CPLGetDirname(ninjas[0]->input.dem.fileName.c_str()));
+        CPLSetConfigOption("CPLTMPDIR", CPLGetDirname(ninjas[0]->input.dem.fileName.c_str()));
+        CPLSetConfigOption("TEMP", CPLGetDirname(ninjas[0]->input.dem.fileName.c_str()));
+        int status = NinjaFoam::GenerateFoamDirectory(ninjas[0]->input.dem.fileName);
+        if(status != 0){
+            throw std::runtime_error("Error generating the NINJAFOAM directory.");
+        }
+    }
+#endif //NINJAFOAM
 
 #ifdef _OPENMP
     omp_set_nested(false);
@@ -289,14 +273,126 @@ bool ninjaArmy::startRuns(int numProcessors)
 
     setAtmFlags();
    //TODO: move common parameters (resolutions, input filenames, output arguments) to ninjaArmy or change storage class specifier to static
-    //fetches PDF base map, temporary hack
-    if(ninjas[0]->input.pdfOutFlag == true )
+    /*
+    ** Download a color relief file as the temp file allocated in
+    ** initLocalData().  If we fail, clean up properly so we can save a
+    ** hillshade file at that location.
+    */
+    if(ninjas[0]->input.pdfOutFlag == true)
     {
-        SURF_FETCH_E retval;
-        SurfaceFetch * fetcher = FetchFactory::GetSurfaceFetch( "relief" );
-        retval = fetcher->makeReliefOf( ninjas[0]->input.dem.fileName, ninjas[0]->input.pdfDEMFileName );
-        delete fetcher;
+        GDALDatasetH hDS = NULL;
+        GDALRasterBandH hBand = NULL;
 
+        hDS = GDALOpen( ninjas[0]->input.dem.fileName.c_str(), GA_ReadOnly );
+        assert( hDS );
+        hBand = GDALGetRasterBand( hDS, 1 );
+        assert( hBand );
+
+        int nXSize = GDALGetRasterXSize( hDS );
+        int nYSize = GDALGetRasterYSize( hDS );
+        /*
+        ** Figure out How big we need to make our raster, given a width,
+        ** height and dpi.
+        */
+        double dfWidth, dfHeight;
+        unsigned short nDPI;
+        dfHeight = ninjas[0]->input.pdfHeight - OutputWriter::TOP_MARGIN - OutputWriter::BOTTOM_MARGIN;
+        dfWidth = ninjas[0]->input.pdfWidth - 2.0*OutputWriter::SIDE_MARGIN;
+        nDPI = ninjas[0]->input.pdfDPI;
+        double dfRatio, dfRatioH, dfRatioW;
+
+        dfRatioH = dfHeight * nDPI / nYSize;
+        dfRatioW = dfWidth * nDPI / nXSize;
+        dfRatio = MIN( dfRatioH, dfRatioW );
+
+        int nNewXSize = nXSize * dfRatio;
+        int nNewYSize = nYSize * dfRatio;
+
+        CPLSetConfigOption( "GDAL_PAM_ENABLED", "OFF" );
+
+        SURF_FETCH_E retval = SURF_FETCH_E_NONE;
+        if( ninjas[0]->input.pdfBaseType == WindNinjaInputs::TOPOFIRE )
+        {
+            SurfaceFetch * fetcher = FetchFactory::GetSurfaceFetch( "relief" );
+            retval = fetcher->makeReliefOf( ninjas[0]->input.dem.fileName,
+                                            pszTmpColorRelief, nNewXSize, nNewYSize );
+            delete fetcher;
+        }
+        /*
+        ** If we fail, or the user wants a hillshade, copy the dem into the
+        ** file as an 8 bit GeoTiff
+        */
+        if( ninjas[0]->input.pdfBaseType == WindNinjaInputs::HILLSHADE ||
+            retval != SURF_FETCH_E_NONE )
+        {
+            CPLDebug( "NINJA", "Failed to download relief, creating hillshade" );
+            GDALDriverH hDrv = NULL;
+            hDrv = GDALGetDriverByName( "GTiff" );
+            assert( hDrv );
+            CPLSetErrorHandler( CPLQuietErrorHandler );
+            GDALDeleteDataset( hDrv, pszTmpColorRelief );
+            CPLPopErrorHandler();
+
+            GDALDatasetH h8bit = GDALCreate( hDrv, pszTmpColorRelief, nNewXSize,
+                                             nNewYSize, 1, GDT_Byte, NULL );
+            CPLErr eErr = CE_None;
+            double adfGeoTransform[6];
+            eErr = GDALGetGeoTransform( hDS, adfGeoTransform );
+            assert( eErr == CE_None );
+            adfGeoTransform[1] /= dfRatio;
+            adfGeoTransform[5] /= dfRatio;
+            GDALSetGeoTransform( h8bit, adfGeoTransform );
+
+            GDALSetProjection( h8bit, GDALGetProjectionRef( hDS ) );
+
+            GDALRasterBandH h8bitBand = GDALGetRasterBand( h8bit, 1 );
+            float *padfData = NULL;
+            padfData = (float*)CPLMalloc( nNewXSize * nNewYSize * sizeof( float ) );
+            unsigned char *pabyData = NULL;
+            pabyData = (unsigned char*)CPLMalloc( nNewXSize * nNewYSize * sizeof( unsigned char* ) );
+            double adfMinMax[2];
+            int bSuccess = TRUE;
+            double dfMin, dfMax, dfMean, dfStdDev;
+            GDALComputeRasterStatistics( hBand, FALSE, &dfMin, &dfMax, &dfMean, &dfStdDev, NULL, NULL );
+
+            eErr = GDALRasterIO( hBand, GF_Read, 0, 0, nXSize, nYSize,
+                                 padfData, nNewXSize, nNewYSize,
+                                 GDT_Float32, 0, 0 );
+            assert( eErr == CE_None );
+            for( int i = 0; i < nNewXSize * nNewYSize; i++ )
+            {
+                /*
+                ** Figure out what is going on here and document it.  It makes a
+                ** potentially useful map whern dfMax=BIG and dfMin=-BIG.
+                */
+                //double dfMin = GDALGetRasterMinimum( hBand, NULL );
+                //double dfMax = GDALGetRasterMaximum( hBand, NULL );
+                //pabyData[j] = (unsigned char)(padfData[j] * (dfMax - dfMin) / (dfMax - dfMin)) * 255;
+
+                /* Normal */
+                pabyData[i] = ((padfData[i] - dfMin) / (dfMax - dfMin)) * 255;
+            }
+            eErr = GDALRasterIO( h8bitBand, GF_Write, 0, 0, nNewXSize,
+                                 nNewYSize, pabyData, nNewXSize, nNewYSize,
+                                 GDT_Byte, 0, 0 );
+            assert( eErr == CE_None );
+            CPLFree( (void*)padfData );
+            CPLFree( (void*)pabyData );
+            GDALFlushCache( h8bit );
+            GDALClose( hDS );
+            GDALClose( h8bit );
+
+            /* delete stats file */
+            if( CPLCheckForFile( (char*)CPLSPrintf("%s.aux.xml", ninjas[0]->input.dem.fileName.c_str()), NULL ) ){
+                VSIUnlink( CPLSPrintf("%s.aux.xml", ninjas[0]->input.dem.fileName.c_str()) );
+            }
+        }
+        /* Make sure all runs point to the proper DEM file */
+        for(unsigned int i = 0; i < ninjas.size(); i++)
+        {
+            ninjas[i]->input.pdfDEMFileName = pszTmpColorRelief;
+        }
+        CPLSetConfigOption( "GDAL_PAM_ENABLED", "ON" );
     }
 
     if(ninjas.size() == 1)
@@ -315,12 +411,12 @@ bool ninjaArmy::startRuns(int numProcessors)
                 ninja* diurnal_ninja = new ninja(*ninjas[0]);
                 diurnal_ninja->input.initializationMethod = WindNinjaInputs::foamInitializationFlag;
                 diurnal_ninja->input.inputWindHeight = ninjas[0]->input.outputWindHeight;
-                diurnal_ninja->set_meshResChoice("fine"); //may not have been set, just always make the diurnal run "fine"
-                diurnal_ninja->AngleGrid = ninjas[0]->AngleGrid; //pass cfd flow field to diurnal run
-                diurnal_ninja->VelocityGrid = ninjas[0]->VelocityGrid; //pass cfd flow field to diurnal run
+                diurnal_ninja->set_meshResolution(ninjas[0]->get_meshResolution(), lengthUnits::getUnit("m")); 
                 if(!diurnal_ninja->simulate_wind()){
                     printf("Return of false from simulate_wind()");
                 }
+                //set output path on original ninja for the GUI
+                ninjas[0]->input.outputPath = diurnal_ninja->input.outputPath;
             } 
 #endif //NINJAFOAM            
 
@@ -349,8 +445,62 @@ bool ninjaArmy::startRuns(int numProcessors)
             status = false;
             throw;
         }
-
     }
+#ifdef NINJAFOAM
+    else if(ninjas.size() > 1 & ninjas[0]->identify() =="ninjafoam")
+    {
+#ifdef _OPENMP
+        omp_set_num_threads(numProcessors);
+#endif
+        for(unsigned int i = 0; i < ninjas.size(); i++)
+        {
+            try{
+                //set number of threads for the run
+                ninjas[i]->set_numberCPUs( numProcessors );
+ 
+                //start the run
+                if(!ninjas[i]->simulate_wind()){
+                    throw std::runtime_error("ninjaArmy: Error in NinjaFoam::simulate_wind().");
+                }
+                //if it's a ninjafoam run and diurnal is turned on, link the ninjafoam with 
+                //a ninja run to add diurnal flow after the cfd solution is computed
+                if(ninjas[i]->identify() == "ninjafoam" & ninjas[i]->input.diurnalWinds == true){
+                    CPLDebug("NINJA", "Starting a ninja to add diurnal to ninjafoam output.");
+                    ninja* diurnal_ninja = new ninja(*ninjas[i]);
+                    diurnal_ninja->input.initializationMethod = WindNinjaInputs::foamInitializationFlag;
+                    diurnal_ninja->input.inputWindHeight = ninjas[i]->input.outputWindHeight;
+                    //if case is re-used resolution may not be set, set mesh resolution based on ninjas[0]
+                    diurnal_ninja->set_meshResolution(ninjas[0]->get_meshResolution(), lengthUnits::getUnit("m")); 
+                    if(!diurnal_ninja->simulate_wind()){
+                        throw std::runtime_error("ninjaArmy: Error in ninja::simulate_wind().");
+                    }
+                    //set output path on original ninja for the GUI
+                    ninjas[i]->input.outputPath = diurnal_ninja->input.outputPath;
+                } 
+                //write farsite atmosphere file
+                writeFarsiteAtmosphereFile();
+            
+            }catch (bad_alloc& e)
+            {
+                std::cout << "Exception bad_alloc caught: " << e.what() << endl;
+                std::cout << "WindNinja appears to have run out of memory." << endl;
+                status = false;
+            }catch (cancelledByUser& e)
+            {
+                std::cout << "Exception caught: " << e.what() << endl;
+                status = false;
+            }catch (exception& e)
+            {
+                std::cout << "Exception caught: " << e.what() << endl;
+                status = false;
+            }catch (...)
+            {
+                std::cout << "Exception caught: Cannot determine exception type." << endl;
+                status = false;
+            }
+        }
+    }
+#endif //NINJAFOAM            
     else
     {
         for(unsigned int i = 0; i < ninjas.size(); i++)
@@ -384,8 +534,6 @@ bool ninjaArmy::startRuns(int numProcessors)
         hSpdMemDS = GDALCreate(hDriver, "", nXSize, nYSize, 1, GDT_Float64, NULL);
         hDirMemDS = GDALCreate(hDriver, "", nXSize, nYSize, 1, GDT_Float64, NULL);
         hDustMemDS = GDALCreate(hDriver, "", nXSize, nYSize, 1, GDT_Float64, NULL);
-
-        
 
 	#pragma omp parallel for //spread runs on single threads
         //FOR_EVERY(iter_ninja, ninjas) //Doesn't work with omp
@@ -515,7 +663,7 @@ bool ninjaArmy::startRuns(int numProcessors)
             throw;
         }
     }
-
+    
     return status;
 }
 
@@ -837,9 +985,9 @@ int ninjaArmy::setNonEqBc( const int nIndex, const bool flag, char ** papszOptio
     IF_VALID_INDEX_TRY( nIndex, ninjas, ninjas[ nIndex ]->set_NonEqBc( flag ) );
 }
 
-int ninjaArmy::setStlFile( const int nIndex, const std::string stlFile, char ** papszOptions )
+int ninjaArmy::setExistingCaseDirectory( const int nIndex, const std::string directory, char ** papszOptions )
 {
-    IF_VALID_INDEX_TRY( nIndex, ninjas, ninjas[ nIndex ]->set_StlFile( stlFile ) );
+    IF_VALID_INDEX_TRY( nIndex, ninjas, ninjas[ nIndex ]->set_ExistingCaseDirectory( directory ) );
 }
 #endif
 /*-----------------------------------------------------------------------------
@@ -873,11 +1021,6 @@ int ninjaArmy::setInputPointsFilename( const int nIndex, const std::string filen
 int ninjaArmy::setOutputPointsFilename( const int nIndex, const std::string filename, char **papszOptions)
 {
     IF_VALID_INDEX_TRY( nIndex, ninjas, ninjas[ nIndex ]->set_outputPointsFilename( filename ) );
-}
-/*  couldn't find equivalent in ninja.cpp, maybe still in windninjainputs?? */
-int ninjaArmy::setOutputPointsFlag( const int nIndex, const bool flag, char ** papszOptions )
-{
- return 0;
 }
 
 int ninjaArmy::readInputFile( const int nIndex, const std::string filename, char ** papszOptions )
@@ -1544,10 +1687,22 @@ int ninjaArmy::setPDFResolution( const int nIndex, const double resolution,
    return retval;
 }
 
+int ninjaArmy::setPDFBaseMap( const int nIndex,
+                              const int eType )
+{
+    IF_VALID_INDEX_TRY( nIndex, ninjas, ninjas[nIndex]->set_pdfBaseMap( eType ) );
+}
+
 int ninjaArmy::setPDFDEM
 ( const int nIndex, const std::string dem_filename, char ** papszOptions )
 {
     IF_VALID_INDEX_TRY( nIndex, ninjas, ninjas[ nIndex ]->set_pdfDEM( dem_filename ) );
+}
+
+int ninjaArmy::setPDFSize( const int nIndex, const double height, const double width,
+                           const unsigned short dpi )
+{
+    IF_VALID_INDEX_TRY( nIndex, ninjas, ninjas[nIndex]->set_pdfSize( height, width, dpi ));
 }
 
 std::string ninjaArmy::getOutputPath( const int nIndex, char ** papszOptions )
@@ -1583,3 +1738,36 @@ void ninjaArmy::cancelAndReset()
     reset();
 }
 
+void ninjaArmy::initLocalData(void)
+{
+    const char *pszTmp = NULL;
+    pszTmp = CPLGenerateTempFilename( NULL );
+    pszTmp = CPLFormFilename( NULL, pszTmp, ".tif" );
+    pszTmpColorRelief = CPLStrdup( pszTmp );
+}
+
+void ninjaArmy::copyLocalData( const ninjaArmy &A )
+{
+    CPLFree( (void*)pszTmpColorRelief );
+    pszTmpColorRelief = CPLStrdup( A.pszTmpColorRelief );
+}
+
+void ninjaArmy::destoryLocalData(void)
+{
+    CPLPushErrorHandler( CPLQuietErrorHandler );
+    GDALDatasetH hDS = GDALOpen( pszTmpColorRelief, GA_ReadOnly );
+    if( hDS != NULL )
+    {
+        GDALClose( hDS );
+        GDALDriverH hDrv = GDALGetDriverByName( "GTiff" );
+        assert( hDrv );
+        GDALDeleteDataset( hDrv, pszTmpColorRelief );
+    }
+    else
+    {
+        GDALClose( hDS );
+    }
+
+    CPLFree( (void*)pszTmpColorRelief );
+    CPLPopErrorHandler();
+}

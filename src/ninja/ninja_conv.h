@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "gdal.h"
 #include "ogr_api.h"
@@ -61,22 +62,25 @@ std::string FindNinjaRootDir();
 std::string FindNinjaBinDir();
 //std::string FindBoostDataBaseFile();
 std::string FindDataPath(std::string path);
-#ifdef WITH_NOMADS_SUPPORT
-#ifdef GDAL_COMPUTE_VERSION
-    #if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(1,10,0)
-        char **VSIReadDirRecursive( const char *pszPathIn );
-        #define USE_MANUAL_VSIREAD_DIR_RECURSIVE 1
-    #endif /* GDAL_VERSION_NUM >= */
-#else
-    char **VSIReadDirRecursive( const char *pszPathIn );
-    #define USE_MANUAL_VSIREAD_DIR_RECURSIVE 1
-#endif /* GDAL_COMPUTE_VERSION */
-#endif /* WITH_NOMADS_SUPPORT */
+
+//#ifdef WITH_NOMADS_SUPPORT
+//#ifdef GDAL_COMPUTE_VERSION
+    //#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(1,10,0)
+        //char **VSIReadDirRecursive( const char *pszPathIn );
+        //#define USE_MANUAL_VSIREAD_DIR_RECURSIVE 1
+    //#endif /* GDAL_VERSION_NUM >= */
+//#else
+    //char **VSIReadDirRecursive( const char *pszPathIn );
+    //#define USE_MANUAL_VSIREAD_DIR_RECURSIVE 1
+//#endif /* GDAL_COMPUTE_VERSION */
+//#endif /* WITH_NOMADS_SUPPORT */
+char **NinjaVSIReadDirRecursive( const char *pszPathIn );
 
 int NinjaUnlinkTree( const char *pszPath );
 
 void NinjaMalloc( void *hData );
 void NinjaFree( void *hData );
+std::string NinjaRemoveSpaces( std::string s);
 
 #endif /* NINJA_CONV_H */
 
