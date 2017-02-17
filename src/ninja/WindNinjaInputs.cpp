@@ -105,7 +105,7 @@ WindNinjaInputs::WindNinjaInputs()
     pdfLineWidth  = 1.0;
     pdfUnits = lengthUnits::meters;
     pdfFile = "!set";
-    pdfBaseType = HILLSHADE;
+    pdfBaseType = TOPOFIRE;
     pdfWidth = 8.5;
     pdfHeight = 11.0;
     pdfDPI = 150;
@@ -137,12 +137,15 @@ WindNinjaInputs::WindNinjaInputs()
 #endif
 #ifdef NINJAFOAM
     nIterations = 1000;
-    meshCount = 1000000;
+    meshCount = -1;
     ninjafoamMeshChoice = WindNinjaInputs::fine;
     nonEqBc = true;
+    existingCaseDirectory = "!set";
     stlFile = "!set";
     speedInitGridFilename = "!set";
     dirInitGridFilename= "!set";
+    foamVelocityGrid = -1.0;
+    foamAngleGrid = -1.0;
 #endif
     
     outputPointsFilename = "!set";
@@ -200,6 +203,8 @@ WindNinjaInputs::WindNinjaInputs(const WindNinjaInputs &rhs)
     ninjafoamMeshChoice = rhs.ninjafoamMeshChoice;
     nonEqBc = rhs.nonEqBc;
     stlFile = rhs.stlFile;
+    foamVelocityGrid = rhs.foamVelocityGrid;
+    foamAngleGrid = rhs.foamAngleGrid;
 #endif
   outputPointsFilename = rhs.outputPointsFilename;
   inputPointsFilename = rhs.inputPointsFilename;
@@ -394,6 +399,8 @@ WindNinjaInputs &WindNinjaInputs::operator=(const WindNinjaInputs &rhs)
       ninjafoamMeshChoice = rhs.ninjafoamMeshChoice;
       nonEqBc = rhs.nonEqBc;
       stlFile = rhs.stlFile;
+      foamVelocityGrid = rhs.foamVelocityGrid;
+      foamAngleGrid = rhs.foamAngleGrid;
 #endif
       outputPointsFilename = rhs.outputPointsFilename;
       inputPointsFilename = rhs.inputPointsFilename;

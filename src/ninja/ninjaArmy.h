@@ -43,7 +43,9 @@
 #include "wxModelInitializationFactory.h"
 #include "ninja_errors.h"
 #include <algorithm>
+#ifndef Q_MOC_RUN
 #include "boost/typeof/typeof.hpp"
+#endif
 #include "WindNinjaInputs.h"
 #include "fetch_factory.h"
 
@@ -113,7 +115,7 @@ public:
         ncepGfsSurf
     };
 
-    void makeArmy(std::string forecastFilename, std::string timeZone);
+    void makeArmy(std::string forecastFilename, std::string timeZone, bool momentumFlag);
     void set_writeFarsiteAtmFile(bool flag);
     bool startRuns(int numProcessors);
     bool startFirstRun();
@@ -332,16 +334,16 @@ public:
     * \return errval Returns NINJA_SUCCESS upon success
     */
     int setNonEqBc( const int nIndex, const bool flag, char ** papszOptions=NULL );
-        
+
     /**
-    * \brief Set the type of STL file for a NinjaFOAM run
+    * \brief Set the path to an existing case for a NinjaFOAM run
     *
     * \param nIndex index of a ninja
-    * \param stlFile path/filename of STL file
+    * \param  path to existing directory 
     * \return errval Returns NINJA_SUCCESS upon success
     */
-    int setStlFile( const int nIndex, const std::string stlFile, char ** papszOptions=NULL );
-    
+    int setExistingCaseDirectory( const int nIndex, const std::string directory, char ** papszOptions=NULL );
+        
 #endif //NINJAFOAM
 
     /*-----------------------------------------------------------------------------

@@ -65,9 +65,6 @@ ninja::ninja()
     SK=NULL;
     row_ptr=NULL;
     col_ind=NULL;
-    //L=NULL;
-    //u_star=NULL;
-    //bl_height=NULL;
     uDiurnal=NULL;
     vDiurnal=NULL;
     wDiurnal=NULL;
@@ -126,9 +123,6 @@ ninja::ninja(const ninja &rhs)
 , v0(rhs.v0)
 , w0(rhs.w0)
 , mesh(rhs.mesh)
-, L(rhs.L)
-, u_star(rhs.u_star)
-, bl_height(rhs.bl_height)
 , input(rhs.input)
 {
     input.Com = NULL;   //must be set to null!
@@ -212,9 +206,6 @@ ninja &ninja::operator=(const ninja &rhs)
         u0 = rhs.u0;
         v0 = rhs.v0;
         w0 = rhs.w0;
-        L = rhs.L;
-        u_star = rhs.u_star;
-        bl_height = rhs.bl_height;
 
         mesh = rhs.mesh;
         input = rhs.input;
@@ -366,57 +357,22 @@ do
 
 		if(input.matchWxStations == true)
 		{
-			matchingIterCount++;
-			input.Com->ninjaCom(ninjaComClass::ninjaNone, "\"matching\" loop iteration %i...", matchingIterCount);
+                    matchingIterCount++;
+                    input.Com->ninjaCom(ninjaComClass::ninjaNone, "\"matching\" loop iteration %i...", matchingIterCount);
 		}
 
-		#ifdef _OPENMP
-			startInit = omp_get_wtime();
-		#endif
+#ifdef _OPENMP
+                startInit = omp_get_wtime();
+#endif
 
 		input.Com->ninjaCom(ninjaComClass::ninjaNone, "Initializing flow...");
 
 		//initialize
-		if(input.initializationMethod == WindNinjaInputs::wxModelInitializationFlag)
-		{
-                    //wxModelInitialization* init;
-		    //wxInit = wxModelInitializationFactory::makeWxInitialization(input.forecastFilename);
-
-		    wxInit.reset(wxModelInitializationFactory::makeWxInitialization(input.forecastFilename));
-                    wxInit->initializeFields(input, mesh, u0, v0, w0, CloudGrid, L, u_star, bl_height);
-
-		}else if(input.initializationMethod == WindNinjaInputs::domainAverageInitializationFlag)
-		{
-                    domainAverageInitialization init;
-                    init.initializeFields(input, mesh, u0, v0, w0, CloudGrid, L, u_star, bl_height);
-
-		}else if(input.initializationMethod == WindNinjaInputs::pointInitializationFlag)
-		{
-                    pointInitialization init;
-                    init.initializeFields(input, mesh, u0, v0, w0, CloudGrid, L, u_star, bl_height);
-
-		}
-		else if(input.initializationMethod == WindNinjaInputs::griddedInitializationFlag)
-                {
-                    griddedInitialization init;
-		    init.initializeFields(input, mesh, u0, v0, w0, CloudGrid, L, u_star, bl_height);
-                }
-#ifdef NINJAFOAM
-		else if(input.initializationMethod == WindNinjaInputs::foamInitializationFlag)
-		{
-                    foamInitialization init;
-                    init.inputVelocityGrid= VelocityGrid; //set input grids from cfd solution
-                    init.inputAngleGrid = AngleGrid; //set input grids from cfd solution
-                    init.initializeFields(input, mesh, u0, v0, w0, CloudGrid, L, u_star, bl_height);
-		}
+                init.reset(initializationFactory::makeInitialization(input));
+                init->initializeFields(input, mesh, u0, v0, w0, CloudGrid);
+#ifdef _OPENMP
+                endInit = omp_get_wtime();
 #endif
-		else{
-                     throw std::logic_error("Incorrect wind initialization.");
-		}
-
-		#ifdef _OPENMP
-			endInit = omp_get_wtime();
-		#endif
 
 		checkCancel();
 
@@ -1370,8 +1326,8 @@ void ninja::interp_uvw()
 
                 if(k <= 1)   //if we're in the first cell, use log profile
                 {
-                    profile.ObukovLength = L(i,j);
-                    profile.ABL_height = bl_height(i,j);
+                    profile.ObukovLength = init->L(i,j);
+                    profile.ABL_height = init->bl_height(i,j);
                     profile.Roughness = input.surface.Roughness(i,j);
                     profile.Rough_h = input.surface.Rough_h(i,j);
                     profile.Rough_d = input.surface.Rough_d(i,j);
@@ -1758,7 +1714,7 @@ void ninja::discretize()
     //If the run is a 2D WX model run
     else if(input.stabilityFlag==1 &&
             input.initializationMethod==WindNinjaInputs::wxModelInitializationFlag &&
-            wxInit->getForecastIdentifier()!="WRF-3D") //it's a 2D wx model run
+            init->getForecastIdentifier()!="WRF-3D") //it's a 2D wx model run
     {
         stb.Set2dWxInitializationAlpha(input, mesh, CloudGrid);
 
@@ -1777,12 +1733,12 @@ void ninja::discretize()
 	//the potential temp (theta) is available, then use the method below
     else if(input.stabilityFlag==1 &&
             input.initializationMethod==WindNinjaInputs::wxModelInitializationFlag &&
-            wxInit->getForecastIdentifier()=="WRF-3D") //it's a 3D wx model run
+            init->getForecastIdentifier()=="WRF-3D") //it's a 3D wx model run
     {
         input.Com->ninjaCom(ninjaComClass::ninjaNone, "Calculating stability...");
 
-        stb.Set3dVariableAlpha(input, mesh, wxInit->air3d, u0, v0);
-        wxInit->air3d.deallocate();
+        stb.Set3dVariableAlpha(input, mesh, init->air3d, u0, v0);
+        init->air3d.deallocate();
 
         for(unsigned int k=0; k<mesh.nlayers; k++)
         {
@@ -2288,7 +2244,7 @@ void ninja::prepareOutput()
 	if(!isNullRun)
 		interp_uvw();
  
-        if(input.initializationMethod == WindNinjaInputs::foamInitializationFlag){
+        if(input.initializationMethod == WindNinjaInputs::foamDomainAverageInitializationFlag){
             //Set cloud grid
             int longEdge = input.dem.get_nRows();
             if(input.dem.get_nRows() < input.dem.get_nCols())
@@ -2337,7 +2293,7 @@ void ninja::prepareOutput()
             std::string dt;
 
             if(input.initializationMethod == WindNinjaInputs::wxModelInitializationFlag){
-                times = (wxInit->getTimeList(input.ninjaTimeZone));
+                times = (init->getTimeList(input.ninjaTimeZone));
                 dt =  boost::lexical_cast<std::string>(input.ninjaTime);
             }
 
@@ -2347,7 +2303,7 @@ void ninja::prepareOutput()
                 if(input.initializationMethod == WindNinjaInputs::wxModelInitializationFlag){// if it's a wx model run
                     if(input.ninjaTime == times[0]){ //if it's the first time step write headers to new file
                         output = fopen(input.outputPointsFilename.c_str(), "w");
-                        if(wxInit->getForecastIdentifier()=="WRF-3D"){ //it's a 2D wx model run
+                        if(init->getForecastIdentifier()=="WRF-3D"){ //it's a 2D wx model run
                             fprintf(output, "ID,lat,lon,height,datetime,u,v,w,wx_u,wx_v,wx_w\n");
                         }
                         else{
@@ -2367,7 +2323,7 @@ void ninja::prepareOutput()
                 if(input.initializationMethod == WindNinjaInputs::wxModelInitializationFlag){ //if wx model run
                     if(input.ninjaTime == times[0]){ //if it's the first time step write headers to new file
                         output = fopen("output.txt", "w"); //append new time to end of file
-                        if(wxInit->getForecastIdentifier()=="WRF-3D"){ //it's a 3D wx model run
+                        if(init->getForecastIdentifier()=="WRF-3D"){ //it's a 3D wx model run
                             fprintf(output, "ID,lat,lon,height,datetime,u,v,w,wx_u,wx_v,wx_w\n");
                         }
                         else{//it's a 2D wx model run
@@ -2417,8 +2373,8 @@ void ninja::prepareOutput()
                     //profile stuff is a little weird bc we are not at nodes
                     //profile is set based on southwest corner of current cell (elem_i, elem_j)
                     //could interpolate these too?
-                    profile.ObukovLength = L(elem_i,elem_j);
-                    profile.ABL_height = bl_height(elem_i,elem_j);
+                    profile.ObukovLength = init->L(elem_i,elem_j);
+                    profile.ABL_height = init->bl_height(elem_i,elem_j);
                     profile.Roughness = input.surface.Roughness(elem_i,elem_j);
                     profile.Rough_h = input.surface.Rough_h(elem_i,elem_j);
                     profile.Rough_d = input.surface.Rough_d(elem_i,elem_j);
@@ -2443,13 +2399,13 @@ void ninja::prepareOutput()
 
                 if(input.initializationMethod == WindNinjaInputs::wxModelInitializationFlag){ //if wx model run
 
-                    if(wxInit->getForecastIdentifier() == "WRF-3D"){
+                    if(init->getForecastIdentifier() == "WRF-3D"){
                         fprintf(output,"%s,%lf,%lf,%lf,%s,%lf,%lf,%lf,%lf,%lf,%lf\n", pointName.c_str(), lat, lon, height_above_ground, dt.c_str(),
-                                new_u, new_v, new_w, wxInit->u_wxList[i], wxInit->v_wxList[i], wxInit->w_wxList[i]);
+                                new_u, new_v, new_w, init->u_wxList[i], init->v_wxList[i], init->w_wxList[i]);
                     }
                     else{
                     fprintf(output,"%s,%lf,%lf,%lf,%s,%lf,%lf,%lf,%lf,%lf\n", pointName.c_str(), lat, lon, height_above_ground, dt.c_str(),
-                            new_u, new_v, new_w, wxInit->u10List[i], wxInit->v10List[i]);
+                            new_u, new_v, new_w, init->u10List[i], init->v10List[i]);
                     }
                 }
                 else{ //if not a wx model run
@@ -3014,8 +2970,8 @@ void ninja::writeOutputFiles()
 			ninjaKmlFiles.setTime(input.ninjaTime);
 			if(input.initializationMethod == WindNinjaInputs::wxModelInitializationFlag)
 			{
-			    std::vector<boost::local_time::local_date_time> times(wxInit->getTimeList(input.ninjaTimeZone));
-			    ninjaKmlFiles.setWxModel(wxInit->getForecastIdentifier(), times[0]);
+			    std::vector<boost::local_time::local_date_time> times(init->getTimeList(input.ninjaTimeZone));
+			    ninjaKmlFiles.setWxModel(init->getForecastIdentifier(), times[0]);
 			}
 
 			if(ninjaKmlFiles.writeKml(input.googSpeedScaling))
@@ -3057,7 +3013,7 @@ void ninja::writeOutputFiles()
 			velTempGrid = new AsciiGrid<double> (VelocityGrid.resample_Grid(input.pdfResolution, AsciiGrid<double>::order0));
 
 			output.setDirGrid(*angTempGrid);
-			output.setSpeedGrid(*velTempGrid);
+			output.setSpeedGrid(*velTempGrid, input.outputSpeedUnits);
             output.setDEMfile(input.pdfDEMFileName);
             output.setLineWidth(input.pdfLineWidth);
             output.setDPI(input.pdfDPI);
@@ -3099,7 +3055,7 @@ void ninja::writeOutputFiles()
             output.setMaxRunNumber(input.armySize-1);
 
 			output.setDirGrid(AngleGrid);
-			output.setSpeedGrid(VelocityGrid);
+			output.setSpeedGrid(VelocityGrid, input.outputSpeedUnits);
 			
 			output.setMemDs(input.hSpdMemDs, input.hDirMemDs, input.hDustMemDs);// set the in-memory datasets
 
@@ -3566,14 +3522,15 @@ void ninja::set_MeshCount(int meshCount)
 
 void ninja::set_MeshCount(WindNinjaInputs::eNinjafoamMeshChoice meshChoice)
 {
+    //if these change, update values in GUI for horizontal resolution estimation
     if(meshChoice == WindNinjaInputs::coarse){
-        input.meshCount = 100000;
+        input.meshCount = 25000;
     }
     else if(meshChoice == WindNinjaInputs::medium){
-        input.meshCount = 500000;
+        input.meshCount = 50000;
     }
     else if(meshChoice == WindNinjaInputs::fine){
-        input.meshCount = 1e6;
+        input.meshCount = 100000;
     }
     else{
         throw std::range_error("The mesh resolution choice has been set improperly.");
@@ -3600,9 +3557,19 @@ WindNinjaInputs::eNinjafoamMeshChoice ninja::get_eNinjafoamMeshChoice(std::strin
     }
 }
 
-void ninja::set_StlFile(std::string stlFile)
+void ninja::set_ExistingCaseDirectory(std::string directory)
 {
-    input.stlFile = stlFile;
+    input.existingCaseDirectory = directory;
+}
+
+void ninja::set_foamVelocityGrid(AsciiGrid<double> velocityGrid)
+{
+    input.foamVelocityGrid = velocityGrid;
+}
+
+void ninja::set_foamAngleGrid(AsciiGrid<double> angleGrid)
+{
+    input.foamAngleGrid = angleGrid;
 }
 #endif
 
@@ -4576,7 +4543,7 @@ void ninja::set_outputPath(std::string path)
 {
     VSIStatBufL sStat;
     VSIStatL( path.c_str(), &sStat );
-    const char *pszTestPath = CPLFormFilename(path.c_str(), "test", "");
+    const char *pszTestPath = CPLFormFilename(path.c_str(), "NINJA_TEST", "");
     int nRet;
     
     if( VSI_ISDIR( sStat.st_mode ) ){
@@ -4641,7 +4608,8 @@ void ninja::set_outputFilenames(double& meshResolution,
     std::string baseName(CPLGetBasename(input.dem.fileName.c_str()));
     
     if(input.customOutputPath == "!set"){ // if a custom output path was not specified in the cli
-        if( input.initializationMethod == WindNinjaInputs::wxModelInitializationFlag )	//prepend directory paths to rootFile for wxModel run
+        if( input.initializationMethod == WindNinjaInputs::wxModelInitializationFlag ||
+            input.initializationMethod == WindNinjaInputs::foamWxModelInitializationFlag )	//prepend directory paths to rootFile for wxModel run
         {
             pathName = CPLGetPath(input.forecastFilename.c_str());
             //if it's a .tar, write to directory containing the .tar file
@@ -4678,7 +4646,8 @@ void ninja::set_outputFilenames(double& meshResolution,
     wxModelOutputFacet = new boost::local_time::local_time_facet();
     wxModelTimestream.imbue(std::locale(std::locale::classic(), wxModelOutputFacet));
     wxModelOutputFacet->format("%m-%d-%Y_%H%M");
-    if( input.initializationMethod == WindNinjaInputs::wxModelInitializationFlag)
+    if( input.initializationMethod == WindNinjaInputs::wxModelInitializationFlag ||
+        input.initializationMethod == WindNinjaInputs::foamWxModelInitializationFlag )
     {
         wxModelTimestream << input.ninjaTime;
     }
@@ -4692,7 +4661,7 @@ void ninja::set_outputFilenames(double& meshResolution,
 
     ostringstream os, os_kmz, os_shp, os_ascii, os_pdf;
     if( input.initializationMethod == WindNinjaInputs::domainAverageInitializationFlag ||
-        input.initializationMethod == WindNinjaInputs::foamInitializationFlag )
+        input.initializationMethod == WindNinjaInputs::foamDomainAverageInitializationFlag )
     {
         double tempSpeed = input.inputSpeed;
         velocityUnits::fromBaseUnits(tempSpeed, input.inputSpeedUnits);
@@ -4962,6 +4931,29 @@ void ninja::set_ninjaCommunication(int RunNumber, ninjaComClass::eNinjaCom comTy
 
 void ninja::checkInputs()
 {
+    //Check DEM
+    GDALDataset *poDS;
+    poDS = (GDALDataset*)GDALOpen(input.dem.fileName.c_str(), GA_ReadOnly);
+    if(poDS == NULL)
+    {
+        throw std::runtime_error("Could not open DEM for reading.");
+    }
+    if(GDALHasNoData(poDS, 1))
+    {
+        throw std::runtime_error("The DEM has no data values.");
+    }
+    GDALClose((GDALDatasetH)poDS);
+
+    //check for invalid characters in DEM name
+    std::string s = std::string(CPLGetBasename(input.dem.fileName.c_str()));
+    if(s.find_first_of("0123456789") == 0){
+        throw std::runtime_error("The DEM name cannot start with a number.");
+    }
+    if(s.find_first_of("/\\:;\"'") != std::string::npos){
+        throw std::runtime_error("The DEM name contains an invalid character."
+                " The DEM name cannot contain the following characters: / \\ : ; \" '.");
+    }
+
     //Check base inputs needed for run
     if( input.dem.prjString == "" && input.googOutFlag == true )
         throw std::logic_error("Projection information in prjString is not set but should be.");

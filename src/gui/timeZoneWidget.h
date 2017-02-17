@@ -41,8 +41,10 @@
 
 #include <QDebug>
 
+#ifndef Q_MOC_RUN
 #include "boost/date_time/local_time/local_time.hpp"
 #include "boost/date_time/posix_time/posix_time_types.hpp"
+#endif
 
 namespace blt = boost::local_time;
 namespace bpt = boost::posix_time;
@@ -62,8 +64,6 @@ class timeZoneWidget : public QWidget
     QLabel *tzDetailLabel;	/**< Show timezone details */
     QCheckBox *tzDetailCheckBox; /**< Toggle details */
     QStringList tzStringList;	/**< List of zones read from boost */
-
-    blt::tz_database tz_db; /**< boost time zone database */
 
     void loadTimeZones();
     void loadDefaultTimeZones();

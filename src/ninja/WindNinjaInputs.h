@@ -92,8 +92,8 @@ public:
     };
 
     enum ePDFBaseMap {
-        HILLSHADE,
-        TOPOFIRE
+        TOPOFIRE,
+        HILLSHADE
     };
 
     enum eInitializationMethod{
@@ -102,7 +102,8 @@ public:
         pointInitializationFlag,		//single or multiple point inititialization
         wxModelInitializationFlag,	//Weather forecast model initialization
         griddedInitializationFlag,  //gridded speed and direction
-        foamInitializationFlag
+        foamDomainAverageInitializationFlag, //foam "parent" run initialized with domain avg init
+        foamWxModelInitializationFlag //foam "parent" run initialized with wx model init
     };
 
     eVegetation vegetation;
@@ -294,7 +295,10 @@ public:
     int meshCount; //mesh count for a ninjafoam simulation
     eNinjafoamMeshChoice ninjafoamMeshChoice; // fine, medium, coarse
     bool nonEqBc; //flag indicating if non-equilbrium boundary conditions should be used for a ninjafoam simulation
+    std::string existingCaseDirectory; //path to exisitng case for a ninjafoam run
     std::string stlFile; //path/filename of an STL file
+    AsciiGrid<double> foamVelocityGrid; //output velocity grid from ninjafoam
+    AsciiGrid<double> foamAngleGrid; //output angle grid from ninjafoam
 #endif
 };
 
