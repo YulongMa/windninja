@@ -115,8 +115,6 @@ void NinjaCheckThreddsData( void *rc )
 */
 int NinjaInitialize()
 {
-    GDALAllRegister();
-    OGRRegisterAll();
 	int rc = 0;
 #ifdef WIN32
     CPLDebug( "WINDNINJA", "Setting GDAL_DATA..." );
@@ -127,6 +125,9 @@ int NinjaInitialize()
     CPLSetConfigOption( "GDAL_DATA", pszGdalData );
 
 #if defined(FIRELAB_PACKAGE)
+    char szDriverPath[MAX_PATH+1];
+    rc = CPLGetExecPath( szDriverPath, MAX_PATH+1);
+    CPLSetConfigOption("GDAL_DRIVER_PATH", CPLGetPath(szDriverPath));
     /*
     ** Setting the CURL_CA_BUNDLE variable through GDAL doesn't seem to work,
     ** but could be investigated in the future.  CURL_CA_BUNDLE can only be set in GDAL
@@ -162,6 +163,9 @@ int NinjaInitialize()
     rc = _putenv( pszTmp );
     CPLFree( (void*)pszExecPath );
 #endif /* defined(NINJAFOAM) && defined(FIRELAB_PACKAGE)*/
+
+    GDALAllRegister();
+    OGRRegisterAll();
 
 #endif
     /*
