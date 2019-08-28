@@ -127,7 +127,10 @@ int NinjaInitialize()
 #if defined(FIRELAB_PACKAGE)
     char szDriverPath[MAX_PATH+1];
     rc = CPLGetExecPath( szDriverPath, MAX_PATH+1);
-    CPLSetConfigOption("GDAL_DRIVER_PATH", CPLGetPath(szDriverPath));
+    const char *pszPlugins = CPLSPrintf("%s/plugins", CPLGetPath(szDriverPath));
+    CPLDebug("WINDNINJA", "Setting GDAL_DRIVER_PATH: %s", pszPlugins);
+
+    CPLSetConfigOption("GDAL_DRIVER_PATH", pszPlugins);
     /*
     ** Setting the CURL_CA_BUNDLE variable through GDAL doesn't seem to work,
     ** but could be investigated in the future.  CURL_CA_BUNDLE can only be set in GDAL
